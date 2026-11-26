@@ -53,8 +53,9 @@
   <div class="stat"><span class="k">Время</span><span id="hud-time">00:00</span></div>
   <div class="stat"><span class="k">Рядом</span><span id="hud-prompt">—</span></div>
 </div>
-<button id="prompt" class="prompt" type="button" hidden>E</button>
-<p id="touch-hint" class="hint" hidden>Левая половина — ходьба, правая — обзор</p>
+<button id="pause-btn" class="icon-btn touch-only" type="button" aria-label="Пауза">II</button>
+<button id="prompt" class="prompt touch-only" type="button" hidden>E</button>
+<p id="touch-hint" class="hint touch-only" hidden>Левая половина — ходьба, правая — обзор</p>
 <canvas id="game" touch-action="none"></canvas>
 <script type="module" src="./ui/game.js"></script>
 </body>

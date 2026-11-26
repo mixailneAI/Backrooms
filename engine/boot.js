@@ -1,5 +1,3 @@
-// Boot: читает ?id=, показывает фатал, вызывает жест разблокировки звука (4.12), создаёт game (4.4).
-// Импорты уровней идут из levels/all.js (глобальный реестр, 4.9).
 export function parseId(search) {
   const m = /[?&]id=([^&]+)/.exec(search || '');
   return m ? decodeURIComponent(m[1]) : null;
@@ -20,8 +18,19 @@ export function gestureUnlock(win, cb) {
   win.addEventListener('keydown', unlock, { once: true });
 }
 export function homeButton(doc, url = './index.html') {
+  const exitFs = () => {
+    try {
+      if (doc.fullscreenElement && typeof doc.exitFullscreen === 'function') {
+        const p = doc.exitFullscreen();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
+    } catch (e) {}
+  };
   ['fatal-home', 'pause-home', 'death-home', 'win-home'].forEach(id => {
     const b = doc.getElementById(id);
-    if (b) b.addEventListener('click', () => { doc.defaultView.location.href = url; });
+    if (b) b.addEventListener('click', () => {
+      exitFs();
+      doc.defaultView.location.href = url;
+    });
   });
 }
