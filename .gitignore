@@ -1,0 +1,7 @@
+systemtools/
+node_modules/
+*.log
+*.new
+.env
+*.token
+secrets/
