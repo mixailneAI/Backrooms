@@ -1,5 +1,5 @@
 {
-  "version": "089aa73acd",
+  "version": "33fd5138a3",
   "files": [
     "./",
     "./index.html",
@@ -10,6 +10,7 @@
     "./core/prng.js",
     "./core/storage.js",
     "./core/time.js",
+    "./engine/audio.js",
     "./engine/boot.js",
     "./engine/camera.js",
     "./engine/game.js",
@@ -24,6 +25,7 @@
     "./world/textures.js",
     "./ui/game.css",
     "./ui/game.js",
+    "./ui/sw-update.js",
     "./ui/terminal.css",
     "./ui/terminal.js",
     "./levels/all.js",
