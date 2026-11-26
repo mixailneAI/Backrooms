@@ -54,14 +54,14 @@ export function createGame(ctx) {
       const adapter = manualAdapter(manualWorld.colliders);
       const speed = (input.sprint ? 5.2 : input.crouch ? 1.8 : 3.2) * dt;
       const yaw = camera.yaw;
-      const dx = (input.move.z * -Math.sin(yaw) + input.move.x * Math.cos(yaw)) * speed;
-      const dz = (input.move.z * -Math.cos(yaw) - input.move.x * Math.sin(yaw)) * speed;
+      const dx = (Math.sin(yaw) * input.move.z + Math.cos(yaw) * input.move.x) * speed;
+      const dz = (Math.cos(yaw) * input.move.z - Math.sin(yaw) * input.move.x) * speed;
       const p = moveWithSlide(camera.pos(), dx, dz, adapter, 0.3);
       camera.setPos(p.x, p.z);
     }
     camera.applyTo(render && render.camera);
     const look = input.consumeLook();
-    if (look.x || look.y) camera.addLook(look.x, look.y, (save && save.settings().sens) || 1);
+    if (look.x || look.y) camera.addLook(look.x, look.y, ((save && save.settings().sens) || 1) * 0.0022);
   }
 
   function tick(dt) {

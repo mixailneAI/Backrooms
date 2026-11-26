@@ -5,7 +5,7 @@ import { createSave } from '../engine/save.js';
 import { createHud } from '../engine/hud.js';
 import { levels, byId } from '../levels/all.js';
 const $ = id => document.getElementById(id);
-const JOY_RADIUS = 56, LOOK_SCALE = 1.4;
+const JOY_RADIUS = 56, LOOK_SCALE = 0.9;
 const touchPointers = new Map();
 function isTouchDevice() { return 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0; }
 function setupTouch(canvas, input) {
@@ -68,6 +68,17 @@ async function main() {
       }
     });
     $('pause-resume').addEventListener('click', () => game.resume());
+    $('pause-settings').addEventListener('click', () => { showOverlay('pause', false); showOverlay('settings', true); });
+    $('settings-close').addEventListener('click', () => { showOverlay('settings', false); showOverlay('pause', true); });
+    $('pause-fullscreen').addEventListener('click', () => tryFullscreen(document));
+    const range = $('sens-range'), val = $('sens-val');
+    const sens = (save.settings().sens) || 1;
+    if (range) { range.value = String(sens); if (val) val.textContent = Number(sens).toFixed(2); }
+    if (range) range.addEventListener('input', () => {
+      const v = Number(range.value);
+      if (val) val.textContent = v.toFixed(2);
+      save.setSettings({ sens: v });
+    });
     $('death-retry').addEventListener('click', () => { game.loadLevel(level); game.start(); showOverlay('death', false); });
     $('win-next').addEventListener('click', () => {
       const next = game.config && game.config.story && game.config.story.next;

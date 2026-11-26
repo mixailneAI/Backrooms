@@ -1,32 +1,44 @@
 import { prng } from '../core/prng.js';
 const cache = new Map();
 const cloneCache = new Map();
+function grad(ctx, size, top, bottom) { const g = ctx.createLinearGradient(0, 0, 0, size); g.addColorStop(0, top); g.addColorStop(1, bottom); ctx.fillStyle = g; ctx.fillRect(0, 0, size, size); }
 export function makeTexture(THREE, type, palette = {}) {
   const key = type + '|' + JSON.stringify(palette);
   if (cache.has(key)) return cache.get(key);
-  const size = 512;
+  const size = 1024;
   const cv = document.createElement('canvas');
   cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d');
-  ctx.fillStyle = palette.base || '#b8a24a';
-  ctx.fillRect(0, 0, size, size);
+  const base = palette.base || '#b8a24a';
+  const dark = palette.dark || '#8a7a3a';
+  const light = palette.light || '#c9bd7a';
   const r = prng(key);
   if (type === 'carpet') {
-    for (let i = 0; i < 5200; i++) { ctx.fillStyle = r.chance(0.5) ? (palette.dark || '#8a7a3a') : (palette.light || '#c9bd7a'); ctx.fillRect(r.int(size), r.int(size), 2, 2); }
+    grad(ctx, size, light, dark);
+    for (let i = 0; i < 9000; i++) { ctx.fillStyle = r.chance(0.5) ? dark : light; ctx.globalAlpha = 0.4 + r.next() * 0.4; ctx.fillRect(r.int(size), r.int(size), 3, 3); }
+    ctx.globalAlpha = 1;
   } else if (type === 'panels') {
-    ctx.fillStyle = palette.dark || '#9a8a4a';
-    for (let y = 0; y < size; y += 64) ctx.fillRect(0, y, size, 3);
-    for (let i = 0; i < 600; i++) { ctx.fillStyle = palette.light || '#c9bd7a'; ctx.fillRect(r.int(size), r.int(size), 1, 1); }
+    grad(ctx, size, light, base);
+    ctx.fillStyle = dark;
+    for (let y = 0; y < size; y += 128) ctx.fillRect(0, y, size, 6);
+    for (let x = 0; x < size; x += 256) ctx.fillRect(x, 0, 4, size);
+    for (let i = 0; i < 1200; i++) { ctx.fillStyle = light; ctx.globalAlpha = 0.3; ctx.fillRect(r.int(size), r.int(size), 2, 2); }
+    ctx.globalAlpha = 1;
   } else if (type === 'concrete') {
-    for (let i = 0; i < 3600; i++) { ctx.fillStyle = r.chance(0.5) ? (palette.dark || '#777777') : (palette.light || '#999999'); ctx.fillRect(r.int(size), r.int(size), 4, 4); }
+    grad(ctx, size, light, dark);
+    for (let i = 0; i < 5000; i++) { ctx.fillStyle = r.chance(0.5) ? dark : light; ctx.globalAlpha = 0.5; ctx.fillRect(r.int(size), r.int(size), 6, 6); }
+    ctx.globalAlpha = 1;
   } else if (type === 'tile') {
-    ctx.fillStyle = palette.dark || '#7fa8b8';
-    for (let p = 0; p < size; p += 64) { ctx.fillRect(p, 0, 3, size); ctx.fillRect(0, p, size, 3); }
+    grad(ctx, size, light, base);
+    ctx.fillStyle = dark;
+    for (let p = 0; p < size; p += 128) { ctx.fillRect(p, 0, 6, size); ctx.fillRect(0, p, size, 6); }
   } else if (type === 'metal') {
-    for (let y = 0; y < size; y += 2) { ctx.fillStyle = r.chance(0.5) ? (palette.dark || '#6a6f74') : (palette.light || '#8b9095'); ctx.fillRect(0, y, size, 1); }
+    for (let y = 0; y < size; y += 3) { ctx.fillStyle = r.chance(0.5) ? dark : light; ctx.fillRect(0, y, size, 2); }
   } else if (type === 'water') {
-    ctx.fillStyle = palette.light || '#3f7f8f';
-    for (let i = 0; i < 80; i++) ctx.fillRect(0, r.int(size), size, 1);
+    grad(ctx, size, light, dark);
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < 120; i++) { ctx.fillStyle = light; ctx.fillRect(0, r.int(size), size, 2); }
+    ctx.globalAlpha = 1;
   }
   const tex = new THREE.CanvasTexture(cv);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
