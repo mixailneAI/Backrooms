@@ -7,13 +7,17 @@ export const level = {
   hint: 'Иди к зелёной раме — это выход.', goal: 'Найди выход из Лобби',
   toast: 'Лобби. Тишина обманчива.',
   ambient: 'hum',
-  sanityDrain: 0.2, stepSurface: 'carpet',
+  sanityDrain: 0.12, stepSurface: 'carpet',
   lore: [{ title: 'Записка 0', text: 'Если гул стал громче — не оборачивайся. Просто иди на свет.' }],
   biome: {
     name: 'lobby', wallDensity: 0.28, height: 3,
-    palette: { wall: '#b8a24a', floor: '#8a7a3a', ceiling: '#c9bd7a' },
-    fog: { color: '#2a2410', near: 12, far: 70 },
-    hemi: 0.8, ambientLight: 0.30, dirLight: 0.28,
+    palette: {
+      wall: { base: '#c7b65a', dark: '#8e7a32', light: '#ded08a' },
+      floor: { base: '#8a7a3a', dark: '#5f5428', light: '#b3a46a' },
+      ceiling: { base: '#b7a98a', dark: '#665d49', light: '#d6cdb4' }
+    },
+    fog: { color: '#2f2812', near: 13, far: 78 },
+    hemi: 0.95, ambientLight: 0.38, dirLight: 0.34,
     ambient: 'hum', entityType: 'none', entitySpeed: 0,
     openSky: false, water: false, bounds: { w: 24, d: 24 }
   },

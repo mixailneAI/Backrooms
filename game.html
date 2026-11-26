@@ -49,24 +49,44 @@
   </div>
 </div>
 <div id="note" class="overlay" hidden>
-  <div class="box">
+  <div class="box note-box">
     <h2 id="note-title">Записка</h2>
     <p id="note-text"></p>
     <button id="note-close" class="btn primary" type="button">Закрыть</button>
   </div>
 </div>
+<canvas id="game" touch-action="none"></canvas>
+<div id="fx" class="fx" aria-hidden="true"></div>
+<aside id="side">
+  <div class="side-head">СТАТУС</div>
+  <div class="bar">
+    <span class="bar-label">Рассудок</span>
+    <div class="track"><i id="bar-sanity"></i></div>
+    <output id="val-sanity">100%</output>
+  </div>
+  <div class="bar">
+    <span class="bar-label">Выносливость</span>
+    <div class="track"><i id="bar-stamina"></i></div>
+    <output id="val-stamina">100%</output>
+  </div>
+  <div class="inv-head">ИНВЕНТАРЬ</div>
+  <div class="inv">
+    <div class="slot"><b id="inv-water">0</b><span>вода</span></div>
+    <div class="slot"><b id="inv-notes">0</b><span>записки</span></div>
+  </div>
+</aside>
 <div id="hud">
   <div class="stat"><span class="k">Уровень</span><span id="hud-level">—</span></div>
   <div class="stat"><span class="k">Время</span><span id="hud-time">00:00</span></div>
   <div class="stat"><span class="k">Рядом</span><span id="hud-prompt">—</span></div>
 </div>
 <button id="pause-btn" class="icon-btn touch-only" type="button" aria-label="Пауза">II</button>
-<button id="prompt" class="prompt touch-only" type="button" hidden>E</button>
+<button id="sprint-btn" class="round-btn touch-only" type="button" aria-label="Бег">RUN</button>
+<button id="prompt" class="round-btn prompt touch-only" type="button" hidden>E</button>
 <p id="touch-hint" class="hint touch-only" hidden>Левая половина — ходьба, правая — обзор</p>
 <div id="joystick" class="joy touch-only" hidden><div id="joy-knob" class="joy-knob"></div></div>
 <button id="toast" class="toast" type="button" hidden></button>
 <button id="update-toast" class="toast update" type="button" hidden>Обновление готово — нажми, чтобы применить</button>
-<canvas id="game" touch-action="none"></canvas>
 <script type="module" src="./ui/game.js"></script>
 </body>
 </html>

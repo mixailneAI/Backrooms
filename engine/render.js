@@ -1,40 +1,42 @@
-// Рендер: WebGLRenderer, pixel-ratio, туман, свет, ACES tonemapping (4.4).
-// THREE передаётся аргументом — bare-import three запрещён (3.4).
 export function createRender(THREE, canvas, opts = {}) {
   const maxPixelRatio = opts.maxPixelRatio ?? 2;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxPixelRatio));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   if (THREE.ACESFilmicToneMapping != null) renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.06;
+  renderer.toneMappingExposure = 1.16;
   renderer.setSize(window.innerWidth, window.innerHeight, false);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.08, 220);
   camera.rotation.order = 'YXZ';
 
-  const hemi = new THREE.HemisphereLight('#c9bd7a', '#8a7a3a', 0.8);
-  const amb = new THREE.AmbientLight('#ffffff', 0.30);
-  const dir = new THREE.DirectionalLight('#fff2b0', 0.28);
-  dir.position.set(0, 1, 0);
+  const hemi = new THREE.HemisphereLight('#d7c87d', '#6f6030', 0.95);
+  const amb = new THREE.AmbientLight('#fff3c4', 0.38);
+  const dir = new THREE.DirectionalLight('#fff0a8', 0.34);
+  dir.position.set(0.2, 1, 0.1);
   scene.add(hemi, amb, dir);
 
   function applyFog(cfg) {
     const fog = cfg && cfg.fog;
     const pal = (cfg && cfg.palette) || {};
     if (fog) {
-      const c = fog.color || '#2a2410';
-      scene.fog = new THREE.Fog(c, fog.near ?? 12, fog.far ?? 70);
+      const c = fog.color || '#2f2812';
+      scene.fog = new THREE.Fog(c, fog.near ?? 13, fog.far ?? 78);
       renderer.setClearColor(c, 1);
     } else {
       scene.fog = null;
       renderer.setClearColor('#0d0b06', 1);
     }
-    hemi.color.set(pal.ceiling || '#c9bd7a');
-    hemi.groundColor.set(pal.floor || '#8a7a3a');
-    hemi.intensity = cfg && cfg.hemi != null ? cfg.hemi : 0.8;
-    amb.intensity = cfg && cfg.ambientLight != null ? cfg.ambientLight : 0.30;
-    dir.intensity = cfg && cfg.dirLight != null ? cfg.dirLight : 0.28;
+    const wall = pal.wall && pal.wall.base ? pal.wall.base : '#c7b65a';
+    const floor = pal.floor && pal.floor.base ? pal.floor.base : '#8a7a3a';
+    const ceiling = pal.ceiling && pal.ceiling.base ? pal.ceiling.base : '#d6cdb4';
+    hemi.color.set(ceiling);
+    hemi.groundColor.set(floor);
+    hemi.intensity = cfg && cfg.hemi != null ? cfg.hemi : 0.95;
+    amb.intensity = cfg && cfg.ambientLight != null ? cfg.ambientLight : 0.38;
+    dir.intensity = cfg && cfg.dirLight != null ? cfg.dirLight : 0.34;
+    dir.color.set(wall);
   }
 
   function onResize() {

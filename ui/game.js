@@ -7,8 +7,8 @@ import { createAudio } from '../engine/audio.js';
 import { initSwUpdate } from './sw-update.js';
 import { levels, byId } from '../levels/all.js';
 const $ = id => document.getElementById(id);
-const JOY_RADIUS = 56;
-const LOOK_SCALE = 0.9;
+const JOY_RADIUS = 58;
+const LOOK_SCALE = 0.55;
 const touchPointers = new Map();
 function isTouchDevice() { return 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0; }
 function vibrate(save) { try { if (save.settings().vibration && navigator.vibrate) navigator.vibrate(15); } catch (e) {} }
@@ -16,15 +16,18 @@ function enterFullscreen(doc) {
   try {
     const el = doc.documentElement;
     const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-    if (req) {
+    if (!req) return;
+    try {
       const p = req.call(el, { navigationUI: 'hide' });
-      if (p && typeof p.catch === 'function') p.catch(() => {});
+      if (p && typeof p.catch === 'function') p.catch(() => { try { const p2 = req.call(el); if (p2 && p2.catch) p2.catch(() => {}); } catch (e2) {} });
+    } catch (e) {
+      try { req.call(el); } catch (e2) {}
     }
   } catch (e) {}
 }
 function setJoyOrigin(x, y) {
   const joy = $('joystick');
-  if (joy) { joy.style.left = (x - 60) + 'px'; joy.style.top = (y - 60) + 'px'; joy.hidden = false; }
+  if (joy) { joy.style.left = (x - 63) + 'px'; joy.style.top = (y - 63) + 'px'; joy.hidden = false; }
 }
 function setKnob(dx, dy) {
   const knob = $('joy-knob');
@@ -90,20 +93,23 @@ async function main() {
     const save = createSave();
     const hud = createHud(document);
     const audio = createAudio();
+    let noteOpen = false;
+    let toastTimer = 0;
+    let sprintHeld = false;
     const showOverlay = (id, show) => { const el = $(id); if (el) el.hidden = !show; };
     const game = createGame({
       render, save, hud, THREE,
       worldModule: await import('../world/manual.js'),
       onState(state, detail) {
-        showOverlay('pause', state === 'pause');
+        showOverlay('pause', state === 'pause' && !noteOpen);
         showOverlay('death', state === 'death');
         showOverlay('win', state === 'win');
         if (state === 'play') showOverlay('settings', false);
         if (state === 'death') { const c = $('death-cause'); if (c) c.textContent = (detail && detail.cause) || ''; }
+        document.body.classList.toggle('ui-open', state !== 'play' || noteOpen);
       }
     });
     document.body.classList.add('ui-open');
-    let toastTimer = 0;
     function showToast(text) {
       const t = $('toast');
       if (!t) return;
@@ -113,12 +119,19 @@ async function main() {
       toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
     }
     function openNote(lore) {
+      noteOpen = true;
       const title = lore && lore.title ? lore.title : 'Записка';
       const text = lore && lore.text ? lore.text : 'Текст потерян. Гул лампы отвечает не сразу.';
       const nt = $('note-title'), nx = $('note-text');
       if (nt) nt.textContent = title;
       if (nx) nx.textContent = text;
       showOverlay('note', true);
+      game.pause();
+    }
+    function closeNote() {
+      noteOpen = false;
+      showOverlay('note', false);
+      if (game.paused) game.resume();
     }
     $('pause-resume').addEventListener('click', () => { vibrate(save); enterFullscreen(document); showOverlay('settings', false); game.resume(); });
     $('pause-settings').addEventListener('click', () => { vibrate(save); showOverlay('pause', false); showOverlay('settings', true); });
@@ -126,7 +139,20 @@ async function main() {
     $('pause-fullscreen').addEventListener('click', () => { vibrate(save); enterFullscreen(document); });
     $('pause-btn').addEventListener('click', () => { vibrate(save); game.pause(); });
     $('prompt').addEventListener('click', () => { vibrate(save); const ok = game.interact(); if (!ok) showToast('Ничего рядом'); });
-    $('note-close').addEventListener('click', () => { vibrate(save); showOverlay('note', false); });
+    $('note-close').addEventListener('click', () => { vibrate(save); closeNote(); });
+    const sprintBtn = $('sprint-btn');
+    function setSprintHeld(v) {
+      sprintHeld = !!v;
+      game.setSprint(v);
+      if (sprintBtn) sprintBtn.classList.toggle('active', sprintHeld);
+    }
+    if (sprintBtn) {
+      sprintBtn.addEventListener('pointerdown', e => { e.preventDefault(); vibrate(save); setSprintHeld(true); });
+      sprintBtn.addEventListener('pointerup', () => setSprintHeld(false));
+      sprintBtn.addEventListener('pointercancel', () => setSprintHeld(false));
+      sprintBtn.addEventListener('pointerleave', () => setSprintHeld(false));
+    }
+    window.addEventListener('pointerup', () => { if (sprintHeld) setSprintHeld(false); });
     const range = $('sens-range'), val = $('sens-val');
     const sens = Number((save.settings().sens) || 1);
     if (range) {
@@ -156,24 +182,25 @@ async function main() {
       if (e.pointerType === 'mouse' && document.pointerLockElement === canvas) game.input.addLook(e.movementX, e.movementY);
     });
     window.addEventListener('keydown', e => {
-      if (e.code === 'Escape') { if (game.paused) game.resume(); else game.pause(); }
+      if (e.code === 'Escape') { if (noteOpen) closeNote(); else if (game.paused) game.resume(); else game.pause(); }
       game.input.setKey(e.code, true, e.repeat);
     });
     window.addEventListener('keyup', e => game.input.setKey(e.code, false));
-    game.events.on('level-loaded', ({ config }) => { audio.startAmbient(config && config.ambient); });
+    game.events.on('level-loaded', ({ config }) => { audio.startAmbient(config && config.ambient); hud.setStats(game.state()); });
     game.events.on('pause', () => audio.stopAmbient());
     game.events.on('resume', () => audio.startAmbient(game.config && game.config.ambient));
     game.events.on('step', ({ surface }) => audio.step(surface));
-    game.events.on('item-taken', () => { audio.take(); showToast('Предмет взят'); });
+    game.events.on('item-taken', ({ item, add }) => { audio.take(); showToast(add > 1 ? 'Вода +' + add : 'Предмет взят'); });
     game.events.on('note-taken', ({ lore }) => { audio.note(); openNote(lore); });
     game.events.on('door-open', () => { audio.door(); showToast('Дверь открыта'); });
     game.events.on('noclip-open', () => { audio.noclip(); showToast('Проход открыт'); });
     game.events.on('win', () => { audio.stopAmbient(); audio.win(); });
     game.events.on('die', () => { audio.stopAmbient(); audio.die(); });
     gestureUnlock(window, () => {
-      document.body.classList.remove('ui-open');
       audio.unlock();
+      audio.setVolume(save.settings().sound === false ? 0 : 0.35);
       enterFullscreen(document);
+      document.body.classList.remove('ui-open');
       const hint = $('touch-hint');
       if (hint && isTouchDevice()) { hint.hidden = false; setTimeout(() => { hint.hidden = true; }, 6000); }
       game.loadLevel(level);

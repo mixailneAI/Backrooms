@@ -17,9 +17,28 @@ export function createGame(ctx) {
   let levelId = null;
   let running = false;
   let paused = false;
-  let time = 0;
   let disposed = false;
+  let time = 0;
+  let lastMoving = false;
+  let sanity = 100;
+  let stamina = 100;
+  let inventory = { water: 0, notes: 0 };
   const lastStep = { x: 0, z: 0 };
+  function resetRunState() {
+    sanity = 100;
+    stamina = 100;
+    inventory = { water: 0, notes: 0 };
+    time = 0;
+    lastMoving = false;
+  }
+  function state() {
+    return { sanity, stamina, inventory: { water: inventory.water, notes: inventory.notes } };
+  }
+  function setSprint(v) {
+    const on = !!v;
+    if (input.setSprint) input.setSprint(on);
+    else input.sprint = on;
+  }
   function applyLevel(level) {
     levelId = level.id;
     const biome = level.biome || {};
@@ -31,8 +50,10 @@ export function createGame(ctx) {
       story: level.story || null,
       lore: level.lore || [],
       ambient: level.ambient || biome.ambient || null,
+      sanityDrain: level.sanityDrain || biome.sanityDrain || 0,
       stepSurface: level.stepSurface || biome.stepSurface || 'carpet'
     };
+    resetRunState();
     if (render && render.applyFog) render.applyFog(biome);
     if (manualWorld) { manualWorld.dispose(); manualWorld = null; colliderAdapter = null; }
     if (level.chunked) { manualWorld = null; colliderAdapter = null; return; }
@@ -46,13 +67,16 @@ export function createGame(ctx) {
     }
     const spawn = manualWorld && manualWorld.spawns && manualWorld.spawns[0];
     if (spawn) { camera.setPos(spawn.x, spawn.z); lastStep.x = spawn.x; lastStep.z = spawn.z; }
+    const prog = save && save.progress ? save.progress() : null;
+    inventory.notes = prog && prog.notes && prog.notes[levelId] ? prog.notes[levelId].length : 0;
     hud && hud.setLevel(level.name || level.id);
+    hud && hud.setStats && hud.setStats(state());
     events.emit('level-loaded', { id: level.id, config });
   }
   function tickPlayerState(dt) {
     const mv = input.move;
-    const moving = Math.hypot(mv.x, mv.z) > 0.05;
-    camera.update(dt, input, moving);
+    lastMoving = Math.hypot(mv.x, mv.z) > 0.05;
+    camera.update(dt, input, lastMoving);
     if (manualWorld && colliderAdapter) {
       const speed = (input.sprint ? 5.2 : input.crouch ? 1.8 : 3.2) * dt;
       const yaw = camera.yaw;
@@ -62,20 +86,35 @@ export function createGame(ctx) {
       const np = moveWithSlide(p, dx, dz, colliderAdapter, 0.3);
       camera.setPos(np.x, np.z);
       const moved = Math.hypot(np.x - lastStep.x, np.z - lastStep.z);
-      if (moving && moved > 0.85) {
-        lastStep.x = np.x; lastStep.z = np.z;
+      if (lastMoving && moved > 0.85) {
+        lastStep.x = np.x;
+        lastStep.z = np.z;
         events.emit('step', { surface: config && config.stepSurface });
       }
     }
     camera.applyTo(render && render.camera);
     const look = input.consumeLook();
-    if (look.x || look.y) camera.addLook(look.x, look.y, ((save && save.settings().sens) || 1) * 0.0022);
+    if (look.x || look.y) {
+      const raw = Number((save && save.settings().sens) || 1);
+      const eff = raw <= 1 ? raw : 1 + Math.log(raw) * 0.55;
+      camera.addLook(look.x, look.y, eff * 0.00135);
+    }
   }
   function tick(dt) {
     if (!running || paused || disposed) return;
     time += dt;
     tickPlayerState(dt);
     hud && hud.setTime(time);
+    if (input.sprint && lastMoving && stamina > 0) stamina -= 20 * dt;
+    else stamina += 12 * dt;
+    stamina = Math.max(0, Math.min(100, stamina));
+    if (stamina <= 0 && input.sprint) setSprint(false);
+    let drain = (config && config.sanityDrain) || 0;
+    if (stamina < 25) drain *= 1.8;
+    sanity -= drain * 0.12 * dt;
+    sanity = Math.max(0, Math.min(100, sanity));
+    if (sanity <= 0) { die('рассудок исчерпан'); return; }
+    hud && hud.setStats && hud.setStats(state());
     const p = camera.pos();
     let prompt = null;
     try {
@@ -114,44 +153,55 @@ export function createGame(ctx) {
       return;
     }
     if (item.type === 'note') {
-      item.taken = true; hideItem(item);
+      item.taken = true;
+      hideItem(item);
       const loreIndex = item.data && item.data.loreIndex != null ? item.data.loreIndex : null;
-      if (save) save.addNote(levelId, item.id);
-      events.emit('note-taken', { item, loreIndex, lore: loreIndex != null && config.lore ? config.lore[loreIndex] : null });
+      const added = save && save.addNote ? save.addNote(levelId, item.id) : false;
+      if (added) inventory.notes++;
+      const lore = loreIndex != null && config && config.lore ? config.lore[loreIndex] : null;
+      events.emit('note-taken', { item, loreIndex, lore, inventory: state().inventory });
       return;
     }
     if (item.type === 'item') {
-      item.taken = true; hideItem(item);
-      events.emit('item-taken', { item });
+      item.taken = true;
+      hideItem(item);
+      const add = Number(item.data && item.data.water) || 1;
+      inventory.water += add;
+      events.emit('item-taken', { item, add, inventory: state().inventory });
       return;
     }
     if (item.type === 'door') {
-      item.taken = true; hideItem(item);
+      item.taken = true;
+      hideItem(item);
       if (item.data && item.data.colliderIndex != null) disableCollider(item.data.colliderIndex);
       events.emit('door-open', { item });
       return;
     }
     if (item.type === 'noclip') {
-      item.taken = true; hideItem(item);
+      item.taken = true;
+      hideItem(item);
       if (item.data && item.data.colliderIndex != null) disableCollider(item.data.colliderIndex);
       events.emit('noclip-open', { item });
     }
   }
   function win() {
-    running = false; loop.stop();
+    running = false;
+    loop.stop();
     if (save) save.win();
     events.emit('win', { id: levelId });
     onState && onState('win');
   }
   function die(cause) {
-    running = false; loop.stop();
+    running = false;
+    loop.stop();
     if (save) save.death();
     events.emit('die', { cause });
     onState && onState('death', { cause });
   }
   const loop = createLoop({ tick });
   return {
-    input, camera, services: { interact }, events,
+    input, camera, events,
+    services: { interact },
     get config() { return config; },
     get levelId() { return levelId; },
     get time() { return time; },
@@ -160,31 +210,40 @@ export function createGame(ctx) {
     manualWorld: () => manualWorld,
     colliderAdapter: () => colliderAdapter,
     tickPlayerState,
+    setSprint,
+    state,
     loadLevel(level) {
       if (!level || typeof level !== 'object') throw new Error('loadLevel: нет уровня');
       if (level.chunked) {
-        config = { id: level.id, seed: level.seed || 1, chunked: true, biome: level.biome || null, story: level.story || null, lore: level.lore || [], ambient: level.ambient || null, stepSurface: level.stepSurface || 'carpet' };
+        resetRunState();
+        config = { id: level.id, seed: level.seed || 1, chunked: true, biome: level.biome || null, story: level.story || null, lore: level.lore || [], ambient: level.ambient || null, sanityDrain: level.sanityDrain || 0, stepSurface: level.stepSurface || 'carpet' };
         manualWorld = null;
         colliderAdapter = null;
+        hud && hud.setLevel(level.name || level.id);
+        hud && hud.setStats && hud.setStats(state());
+        events.emit('level-loaded', { id: level.id, config });
         return;
       }
       applyLevel(level);
     },
     start() {
       if (running) return;
-      running = true; paused = false; time = 0;
+      running = true;
+      paused = false;
       loop.start();
       events.emit('start', { id: levelId });
     },
     pause() {
       if (!running || paused) return;
-      paused = true; loop.stop();
+      paused = true;
+      loop.stop();
       events.emit('pause');
       onState && onState('pause');
     },
     resume() {
       if (!running || !paused) return;
-      paused = false; loop.start();
+      paused = false;
+      loop.start();
       events.emit('resume');
       onState && onState('play');
     },
