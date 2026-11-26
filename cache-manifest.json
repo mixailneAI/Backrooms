@@ -1,0 +1,30 @@
+{
+  "version": "9b24a71abe",
+  "files": [
+    "./",
+    "./index.html",
+    "./manifest.webmanifest",
+    "./core/colors.js",
+    "./core/events.js",
+    "./core/math.js",
+    "./core/prng.js",
+    "./core/storage.js",
+    "./core/time.js",
+    "./engine/camera.js",
+    "./engine/input.js",
+    "./engine/interact.js",
+    "./engine/loop.js",
+    "./engine/physics.js",
+    "./engine/save.js",
+    "./world/manual.js",
+    "./world/textures.js",
+    "./ui/terminal.css",
+    "./ui/terminal.js",
+    "./levels/all.js",
+    "./sw.js",
+    "./vendor/three.module.js",
+    "./assets/icon-192.png",
+    "./assets/icon-512.png",
+    "./assets/maskable-512.png"
+  ]
+}
