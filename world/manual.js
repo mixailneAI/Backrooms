@@ -1,27 +1,27 @@
-import { makeTexture } from './textures.js';
-
-// API ручного мира (4.5). THREE передаётся аргументом — bare-import three запрещён (3.4).
+import { makeTexturedClone } from './textures.js';
 export function createManualWorld(THREE, scene, opts = {}) {
   const height = opts.height ?? 3;
   const bounds = opts.bounds || { w: 16, d: 16 };
   const group = new THREE.Group();
   const colliders = [], interactables = [], spawns = [];
   const matCache = new Map();
-  function material(type, palette = {}) {
-    const key = type + '|' + JSON.stringify(palette);
-    if (!matCache.has(key)) matCache.set(key, new THREE.MeshLambertMaterial({ map: makeTexture(THREE, type, palette) }));
+  const tile = 2;
+  function material(type, palette = {}, rx = 1, ry = 1) {
+    const key = type + '|' + JSON.stringify(palette) + '|' + rx + ',' + ry;
+    if (!matCache.has(key)) matCache.set(key, new THREE.MeshLambertMaterial({ map: makeTexturedClone(THREE, type, palette, rx, ry) }));
     return matCache.get(key);
   }
   function box(o = {}) {
     const w = o.w ?? 1, h = o.h ?? height, d = o.d ?? 1;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), o.mat || material(o.type || 'wall', o.palette));
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), o.mat || material(o.type || 'wall', o.palette, Math.max(w, d) / tile, h / tile));
     m.position.set(o.x || 0, (o.y ?? 0) + h / 2, o.z || 0);
     group.add(m);
     if (o.solid !== false) colliders.push({ x: o.x || 0, z: o.z || 0, w, d });
     return m;
   }
   function plane(o, y, rot) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(o.w ?? 4, o.d ?? 4), o.mat || material(o.type || 'floor', o.palette));
+    const w = o.w ?? 4, d = o.d ?? 4;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), o.mat || material(o.type || 'floor', o.palette, w / tile, d / tile));
     m.rotation.x = rot; m.position.set(o.x || 0, y, o.z || 0);
     group.add(m); return m;
   }
@@ -33,11 +33,10 @@ export function createManualWorld(THREE, scene, opts = {}) {
     return m;
   }
   return {
-    group, colliders, interactables, spawns,
-    box,
+    group, colliders, interactables, spawns, box, material,
     cylinder(o = {}) {
       const r = o.r ?? 0.3, h = o.h ?? height;
-      const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 10), o.mat || material(o.type || 'concrete', o.palette));
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 12), o.mat || material(o.type || 'concrete', o.palette, r * 2 / tile, h / tile));
       m.position.set(o.x || 0, h / 2, o.z || 0); group.add(m);
       if (o.solid !== false) colliders.push({ x: o.x || 0, z: o.z || 0, w: r * 2, d: r * 2 });
       return m;
@@ -56,7 +55,8 @@ export function createManualWorld(THREE, scene, opts = {}) {
       box({ x: w / 2, z: 0, w: t, d, palette: o.palette });
     },
     waterPlane(o = {}) {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(o.w ?? 8, o.d ?? 8), new THREE.MeshLambertMaterial({ map: makeTexture(THREE, 'water', o.palette), transparent: true, opacity: 0.7 }));
+      const w = o.w ?? 8, d = o.d ?? 8;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshLambertMaterial({ map: makeTexturedClone(THREE, 'water', o.palette, w / tile, d / tile), transparent: true, opacity: 0.7 }));
       m.rotation.x = -Math.PI / 2; m.position.set(o.x || 0, o.y ?? 0.05, o.z || 0); group.add(m); return m;
     },
     lightColumn(o = {}) {
@@ -69,8 +69,10 @@ export function createManualWorld(THREE, scene, opts = {}) {
     note(o = {}) { return marker(o, 'note', '#fff2b0'); },
     door(o = {}) { return marker(o, 'door', '#c9a24a'); },
     noclipWall(o = {}) {
-      const m = box({ ...o, type: o.type || 'panels' });
-      m.material = new THREE.MeshLambertMaterial({ map: makeTexture(THREE, 'panels', o.palette), transparent: true, opacity: 0.6 });
+      const w = o.w ?? 1, h = o.h ?? height, d = o.d ?? 1;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ map: makeTexturedClone(THREE, 'panels', o.palette, Math.max(w, d) / tile, h / tile), transparent: true, opacity: 0.6 }));
+      m.position.set(o.x || 0, (o.y ?? 0) + h / 2, o.z || 0); group.add(m);
+      colliders.push({ x: o.x || 0, z: o.z || 0, w, d });
       interactables.push({ id: o.id || 'noclip_' + interactables.length, type: 'noclip', x: o.x || 0, z: o.z || 0, label: o.label });
       return m;
     },
@@ -84,7 +86,6 @@ export function createManualWorld(THREE, scene, opts = {}) {
         }
       return out;
     },
-    material,
     flush() { scene.add(group); return group; },
     dispose() {
       scene.remove(group);
