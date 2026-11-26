@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d0b06">
+<title>BACKROOMS</title>
+<link rel="icon" href="./assets/icon-192.png" type="image/png">
+<link rel="stylesheet" href="./ui/game.css">
+</head>
+<body>
+<div id="fatal" class="overlay fatal" hidden>
+  <div class="box">
+    <h2>Фатальная ошибка</h2>
+    <pre id="fatal-stack"></pre>
+    <button id="fatal-home" class="btn" type="button">В терминал</button>
+  </div>
+</div>
+<div id="pause" class="overlay" hidden>
+  <div class="box">
+    <h2>Пауза</h2>
+    <button id="pause-resume" class="btn primary" type="button">Продолжить</button>
+    <button id="pause-home" class="btn" type="button">В терминал</button>
+  </div>
+</div>
+<div id="death" class="overlay" hidden>
+  <div class="box">
+    <h2>Ты умер</h2>
+    <p id="death-cause"></p>
+    <button id="death-retry" class="btn primary" type="button">Ещё раз</button>
+    <button id="death-home" class="btn" type="button">В терминал</button>
+  </div>
+</div>
+<div id="win" class="overlay" hidden>
+  <div class="box">
+    <h2>Уровень пройден</h2>
+    <button id="win-next" class="btn primary" type="button">Дальше</button>
+    <button id="win-home" class="btn" type="button">В терминал</button>
+  </div>
+</div>
+<div id="hud">
+  <div class="stat"><span class="k">Уровень</span><span id="hud-level">—</span></div>
+  <div class="stat"><span class="k">Время</span><span id="hud-time">00:00</span></div>
+  <div class="stat"><span class="k">Рядом</span><span id="hud-prompt">—</span></div>
+</div>
+<button id="prompt" class="prompt" type="button" hidden>E</button>
+<canvas id="game" touch-action="none"></canvas>
+<script type="module" src="./ui/game.js"></script>
+</body>
+</html>
