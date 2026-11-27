@@ -210,6 +210,22 @@ export function createAudio(opts = {}) {
       tone({ frequency: 520, endFrequency: 880, duration: 0.14, type: 'triangle', gain: 0.085 });
       tone({ frequency: 780, endFrequency: 1120, duration: 0.09, type: 'sine', gain: 0.035, attack: 0.004 });
     },
+    spray() {
+      noiseBurst(0.16, 0.075, 1850, 'sfx', 'highpass');
+      tone({ frequency: 740, endFrequency: 510, duration: 0.09, type: 'sine', gain: 0.018, attack: 0.002 });
+    },
+    arrow() {
+      tone({ frequency: 1260, endFrequency: 720, duration: 0.065, type: 'square', gain: 0.045, attack: 0.002 });
+      noiseBurst(0.035, 0.024, 2400, 'sfx', 'highpass');
+    },
+    eat() {
+      noiseBurst(0.19, 0.075, 620, 'sfx', 'lowpass');
+      tone({ frequency: 145, endFrequency: 92, duration: 0.12, type: 'triangle', gain: 0.035, attack: 0.003 });
+    },
+    backpack() {
+      tone({ frequency: 118, endFrequency: 62, duration: 0.28, type: 'sine', gain: 0.085, attack: 0.025 });
+      noiseBurst(0.11, 0.022, 390, 'sfx', 'lowpass');
+    },
     note() {
       tone({ frequency: 392, endFrequency: 520, duration: 0.2, type: 'sine', gain: 0.075 });
       noiseBurst(0.09, 0.025, 1650);

@@ -1,7 +1,7 @@
 import { clamp } from '../core/math.js';
 
 // Унификация источников ввода. Спринт ТОЛЬКО Shift/кнопка (5.7, грабли 16). Действия — edge-trigger (9.24).
-const ACTIONS = { KeyE: 'interact', KeyQ: 'drink', KeyR: 'arrow', KeyF: 'light' };
+const ACTIONS = { KeyE: 'interact', KeyQ: 'useItem', KeyR: 'arrow', KeyF: 'light' };
 
 export function createInput() {
   const keys = new Set();
@@ -10,7 +10,7 @@ export function createInput() {
   const joy = { x: 0, y: 0 };
   const move = { x: 0, z: 0 };
   const look = { x: 0, y: 0 };
-  let sprint = false, crouch = false;
+  let sprint = false, crouch = false, arrowDrawing = false;
 
   function recompute() {
     let x = joy.x, z = joy.y;
@@ -30,6 +30,8 @@ export function createInput() {
     look,
     get sprint() { return sprint; },
     get crouch() { return crouch; },
+    get isArrowDrawing() { return arrowDrawing || keys.has('KeyF'); },
+    setArrowDrawing(value) { arrowDrawing = !!value; },
     setKey(code, down, repeat = false) {
       if (down) { keys.add(code); if (!repeat && ACTIONS[code]) pressed.add(ACTIONS[code]); }
       else keys.delete(code);
@@ -44,6 +46,6 @@ export function createInput() {
     addLook(dx, dy) { look.x += dx; look.y += dy; },
     consumeLook() { const l = { x: look.x, y: look.y }; look.x = 0; look.y = 0; return l; },
     consumeActions() { const a = [...pressed]; pressed.clear(); return a; },
-    reset() { keys.clear(); buttons.clear(); pressed.clear(); joy.x = 0; joy.y = 0; look.x = 0; look.y = 0; recompute(); }
+    reset() { keys.clear(); buttons.clear(); pressed.clear(); arrowDrawing = false; joy.x = 0; joy.y = 0; look.x = 0; look.y = 0; recompute(); }
   };
 }

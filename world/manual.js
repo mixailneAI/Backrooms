@@ -126,6 +126,65 @@ export function createManualWorld(THREE, scene, opts = {}) {
     return groupBottle;
   }
 
+  function foodMesh(color) {
+    const food = new THREE.Group();
+    const meatMat = new THREE.MeshStandardMaterial({ color: color || '#c98a3a', emissive: '#6f3511', emissiveIntensity: 0.18, roughness: 0.74, metalness: 0 });
+    const boneMat = new THREE.MeshStandardMaterial({ color: '#e8d9b8', roughness: 0.86, metalness: 0 });
+    const piece = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.155, 0.075, 20, 1, false), meatMat);
+    piece.scale.set(1.12, 1, 0.88);
+    piece.rotation.z = 0.12;
+    piece.rotation.y = -0.28;
+    const bone = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.18, 10), boneMat);
+    bone.position.set(0.16, 0.01, 0.035);
+    bone.rotation.z = Math.PI / 2.8;
+    const endA = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), boneMat);
+    const endB = endA.clone();
+    endA.position.set(0.235, 0.07, 0.035);
+    endB.position.set(0.19, -0.06, 0.035);
+    food.add(piece, bone, endA, endB);
+    food.traverse(mesh => { if (mesh.isMesh) { mesh.castShadow = true; mesh.receiveShadow = true; } });
+    return food;
+  }
+
+  function spraycanMesh(color) {
+    const spray = new THREE.Group();
+    const bodyMat = new THREE.MeshStandardMaterial({ color: color || '#e8d27a', roughness: 0.48, metalness: 0.22, emissive: '#72531c', emissiveIntensity: 0.12 });
+    const capMat = new THREE.MeshStandardMaterial({ color: '#554321', roughness: 0.52, metalness: 0.28 });
+    const labelMat = new THREE.MeshStandardMaterial({ color: '#f5e9bb', roughness: 0.62, metalness: 0.04 });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.31, 20), bodyMat);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.075, 18), capMat);
+    cap.position.y = 0.19;
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.091, 0.091, 0.085, 20, 1, true), labelMat);
+    band.position.y = -0.015;
+    const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.025, 0.025, 10), labelMat);
+    nozzle.position.y = 0.24;
+    spray.add(body, cap, band, nozzle);
+    spray.traverse(mesh => { if (mesh.isMesh) { mesh.castShadow = true; mesh.receiveShadow = true; } });
+    return spray;
+  }
+
+  function backpackMesh(color) {
+    const pack = new THREE.Group();
+    const bodyMat = new THREE.MeshStandardMaterial({ color: color || '#8a6a3a', roughness: 0.94, metalness: 0.02 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: '#4d3821', roughness: 0.88, metalness: 0.02 });
+    const flapMat = new THREE.MeshStandardMaterial({ color: '#a27b45', roughness: 0.9, metalness: 0.02 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.34, 0.17), bodyMat);
+    const flap = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.09, 0.19), flapMat);
+    flap.position.set(0, 0.13, 0.015);
+    const frontPocket = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.13, 0.045), flapMat);
+    frontPocket.position.set(0, -0.055, 0.105);
+    const strapLeft = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.35, 0.045), trimMat);
+    const strapRight = strapLeft.clone();
+    strapLeft.position.set(-0.115, 0, -0.105);
+    strapRight.position.set(0.115, 0, -0.105);
+    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.018, 6, 14, Math.PI), trimMat);
+    handle.rotation.z = Math.PI;
+    handle.position.set(0, 0.2, -0.025);
+    pack.add(body, flap, frontPocket, strapLeft, strapRight, handle);
+    pack.traverse(mesh => { if (mesh.isMesh) { mesh.castShadow = true; mesh.receiveShadow = true; } });
+    return pack;
+  }
+
   function paperMesh() {
     const groupPaper = new THREE.Group();
     const paperMat = new THREE.MeshStandardMaterial({ color: '#eee1b9', roughness: 0.88, metalness: 0, side: THREE.DoubleSide });
@@ -168,6 +227,9 @@ export function createManualWorld(THREE, scene, opts = {}) {
     const kind = o.data && o.data.kind;
     let mesh, y = type === 'exit' ? 0 : 0.25;
     if (type === 'item' && kind === 'bottle') { mesh = bottleMesh(color); y = 0.22; }
+    else if (type === 'item' && kind === 'food') { mesh = foodMesh(color); y = 0.16; }
+    else if (type === 'item' && kind === 'spraycan') { mesh = spraycanMesh(color); y = 0.2; }
+    else if (type === 'item' && kind === 'backpack') { mesh = backpackMesh(color); y = 0.22; }
     else if (type === 'note' && kind === 'paper') { mesh = paperMesh(); y = 0.045; }
     else if (type === 'exit' && kind === 'frame') { mesh = exitFrame(color); y = 0; }
     else mesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, type === 'exit' ? 2.2 : 0.5, 0.4), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.22, roughness: 0.62 }));

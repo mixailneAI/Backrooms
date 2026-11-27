@@ -115,6 +115,32 @@ function bindPointerDown(element, callback) {
   element.addEventListener('pointercancel', release);
   element.addEventListener('lostpointercapture', release);
 }
+function bindHoldPointer(element, onStart, onEnd) {
+  if (!element) return;
+  const pointers = new Set();
+  element.addEventListener('pointerdown', event => {
+    if (event.button !== undefined && event.button !== 0) return;
+    if (element.disabled || pointers.has(event.pointerId)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    pointers.add(event.pointerId);
+    try { element.setPointerCapture?.(event.pointerId); } catch {}
+    onStart(event);
+  });
+  const release = event => {
+    if (!pointers.has(event.pointerId)) return;
+    pointers.delete(event.pointerId);
+    onEnd(event);
+  };
+  element.addEventListener('pointerup', release);
+  element.addEventListener('pointercancel', release);
+  element.addEventListener('lostpointercapture', release);
+  window.addEventListener('blur', () => {
+    if (!pointers.size) return;
+    pointers.clear();
+    onEnd();
+  });
+}
 
 async function main() {
   try {
@@ -222,6 +248,31 @@ async function main() {
     });
     bindPointerDown(sprintButton, () => { vibrate(save); game.setSprint(!sprintOn); });
 
+    const arrowButton = $('draw-arrow-btn');
+    bindHoldPointer(arrowButton, () => {
+      vibrate(save);
+      arrowButton.classList.add('active');
+      game.setArrowDrawing(true);
+    }, () => {
+      arrowButton.classList.remove('active');
+      game.setArrowDrawing(false);
+    });
+
+    bindPointerDown($('use-item-btn'), () => {
+      if (!game.useActiveItem()) showToast('Выбери курицу в быстром слоте');
+    });
+    for (let slot = 0; slot < 12; slot++) {
+      const slotElement = $('slot-' + slot);
+      bindPointerDown(slotElement, () => {
+        game.selectSlot(slot);
+        if (slot >= 3) hud.setBackpackOpen(true);
+      });
+    }
+    bindPointerDown($('backpack-toggle'), () => {
+      const panel = $('backpack-panel');
+      hud.setBackpackOpen(!!panel?.hidden);
+    });
+
     const sensitivity = $('sens-range'), sensitivityValue = $('sens-val');
     const currentSensitivity = Math.min(10, Math.max(1, Number(readSettings(save).sens) || 1));
     if (sensitivity) {
@@ -277,11 +328,21 @@ async function main() {
     homeButton(document);
 
     setupTouch(canvas, game.input);
+    canvas.addEventListener('contextmenu', event => event.preventDefault());
     canvas.addEventListener('pointerdown', event => {
-      if (event.pointerType === 'mouse' && document.pointerLockElement !== canvas) {
+      if (event.pointerType === 'mouse' && event.button === 2) {
+        event.preventDefault();
+        game.setArrowDrawing(true);
+        return;
+      }
+      if (event.pointerType === 'mouse' && event.button === 0 && document.pointerLockElement !== canvas) {
         try { const result = canvas.requestPointerLock(); result?.catch?.(() => {}); } catch {}
       }
     });
+    window.addEventListener('pointerup', event => {
+      if (event.pointerType === 'mouse' && event.button === 2) game.setArrowDrawing(false);
+    });
+    window.addEventListener('blur', () => game.setArrowDrawing(false));
     canvas.addEventListener('pointermove', event => {
       if (event.pointerType === 'mouse' && document.pointerLockElement === canvas) game.input.addLook(event.movementX, event.movementY);
     });
@@ -290,6 +351,9 @@ async function main() {
         if (noteOpen) closeNote();
         else if (game.paused) game.resume();
         else game.pause();
+      }
+      if (event.code === 'Digit1' || event.code === 'Digit2' || event.code === 'Digit3') {
+        game.selectSlot(Number(event.code.slice(-1)) - 1);
       }
       game.input.setKey(event.code, true, event.repeat);
     });
@@ -303,8 +367,18 @@ async function main() {
     game.events.on('resume', () => audio.startAmbient(game.config?.ambient));
     game.events.on('interact', () => audio.click());
     game.events.on('step', ({ surface }) => audio.step(surface));
-    game.events.on('item-taken', ({ add }) => { audio.take(); showToast(add > 1 ? 'Вода: +' + add : 'Предмет добавлен', 'pickup'); });
-    game.events.on('note-taken', ({ lore }) => { audio.note(); showToast('Записка найдена', 'paper'); openNote(lore); });
+    game.events.on('item-taken', ({ add, type }) => {
+      hud.setStats(game.state());
+      if (type === 'spraycan') { audio.spray(); showToast('Стрелы: +' + (add * 10), 'pickup'); }
+      else if (type === 'food') { audio.take(); showToast('Курица: +' + add, 'pickup'); }
+      else if (type === 'backpack') { audio.backpack(); hud.setBackpackOpen(true); showToast('Рюкзак найден: открыты 9 слотов', 'pickup'); }
+      else { audio.take(); showToast(type === 'water' ? 'Вода: +' + add : 'Предмет добавлен', 'pickup'); }
+    });
+    game.events.on('inventory-full', () => showToast('Инвентарь заполнен', 'danger'));
+    game.events.on('note-taken', ({ lore }) => { audio.note(); hud.setStats(game.state()); showToast('Записка найдена', 'paper'); openNote(lore); });
+    game.events.on('food-used', () => { audio.eat(); hud.setStats(game.state()); showToast('Выносливость: +35', 'pickup'); });
+    game.events.on('arrow-placed', () => audio.arrow());
+    game.events.on('arrow-empty', () => showToast('Нет стрелок. Найди баллончик', 'danger'));
     game.events.on('door-open', () => { audio.door(); showToast('Дверь открыта', 'door'); });
     game.events.on('noclip-open', () => { audio.noclip(); showToast('Проход открыт', 'door'); });
     game.events.on('win', () => { audio.stopAmbient(); audio.win(); });

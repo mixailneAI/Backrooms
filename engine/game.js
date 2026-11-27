@@ -1,6 +1,7 @@
 import { createInput } from './input.js';
 import { createCamera } from './camera.js';
 import { createSave } from './save.js';
+import { createInventory } from './inventory.js';
 import { createInteract } from './interact.js';
 import { createLoop } from './loop.js';
 import { manualAdapter, moveWithSlide } from './physics.js';
@@ -24,7 +25,12 @@ export function createGame(ctx) {
   let sprintHeld = false;
   let sanity = 100;
   let stamina = 100;
-  let inventory = { water: 0, notes: 0 };
+  const inventory = createInventory(save);
+  let localArrows = save && Number.isFinite(Number(save.arrows)) ? Math.max(0, Math.floor(Number(save.arrows))) : 5;
+  const arrowMeshes = [];
+  let previewArrow = null;
+  let arrowTexture = null;
+  let arrowGesture = false;
   const lastStep = { x: 0, z: 0 };
   function resetRunState() {
     input.reset?.();
@@ -32,17 +38,167 @@ export function createGame(ctx) {
     events.emit('sprint', { on: false });
     sanity = 100;
     stamina = 100;
-    inventory = { water: 0, notes: 0 };
     time = 0;
     lastMoving = false;
   }
+  function getArrowCount() {
+    return save && Number.isFinite(Number(save.arrows)) ? Math.max(0, Math.floor(Number(save.arrows))) : localArrows;
+  }
+  function addArrows(amount) {
+    const add = Math.max(0, Math.floor(Number(amount) || 0));
+    if (save && typeof save.addArrows === 'function') localArrows = save.addArrows(add);
+    else if (save && 'arrows' in save) { save.arrows = getArrowCount() + add; localArrows = getArrowCount(); }
+    else localArrows += add;
+    return getArrowCount();
+  }
+  function spendArrow() {
+    if (save && typeof save.spendArrow === 'function') {
+      const spent = save.spendArrow(1);
+      localArrows = getArrowCount();
+      return spent;
+    }
+    if (getArrowCount() <= 0) return false;
+    if (save && 'arrows' in save) save.arrows = getArrowCount() - 1;
+    else localArrows--;
+    return true;
+  }
   function state() {
-    return { sanity, stamina, inventory: { water: inventory.water, notes: inventory.notes } };
+    const counts = {
+      water: inventory.count('water'),
+      notes: inventory.count('note'),
+      food: inventory.count('food'),
+      spraycan: inventory.count('spraycan'),
+      slots: inventory.slots(),
+      activeSlot: inventory.getActiveIndex(),
+      hasBackpack: inventory.hasBackpack()
+    };
+    const progress = save && typeof save.progress === 'function' ? save.progress() : null;
+    const savedNotes = progress && progress.notes && progress.notes[levelId] ? progress.notes[levelId].length : 0;
+    counts.notes = Math.max(counts.notes, savedNotes);
+    return { sanity, stamina, inventory: counts, arrows: getArrowCount() };
   }
   function setSprint(v) {
     sprintHeld = !!v;
     if (input.setSprint) input.setSprint(sprintHeld);
     events.emit('sprint', { on: sprintHeld });
+  }
+  function getArrowTexture() {
+    if (arrowTexture) return arrowTexture;
+    if (!THREE || typeof document === 'undefined' || !THREE.CanvasTexture) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 96;
+    canvas.height = 144;
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#7fff9f';
+    context.shadowColor = '#7fff9f';
+    context.shadowBlur = 12;
+    context.beginPath();
+    context.moveTo(48, 7);
+    context.lineTo(91, 61);
+    context.lineTo(67, 61);
+    context.lineTo(67, 137);
+    context.lineTo(29, 137);
+    context.lineTo(29, 61);
+    context.lineTo(5, 61);
+    context.closePath();
+    context.fill();
+    arrowTexture = new THREE.CanvasTexture(canvas);
+    arrowTexture.colorSpace = THREE.SRGBColorSpace;
+    arrowTexture.needsUpdate = true;
+    return arrowTexture;
+  }
+  function createArrowMesh(opacity = 0.85) {
+    if (!THREE || !render || !render.scene) return null;
+    const texture = getArrowTexture();
+    let geometry;
+    let material;
+    if (texture && THREE.PlaneGeometry) {
+      geometry = new THREE.PlaneGeometry(0.48, 0.72);
+      material = new THREE.MeshBasicMaterial({ color: '#7fff9f', map: texture, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, alphaTest: 0.06 });
+    } else if (THREE.Shape && THREE.ShapeGeometry) {
+      const shape = new THREE.Shape();
+      shape.moveTo(-0.055, -0.28);
+      shape.lineTo(-0.055, 0.105);
+      shape.lineTo(-0.16, 0.105);
+      shape.lineTo(0, 0.34);
+      shape.lineTo(0.16, 0.105);
+      shape.lineTo(0.055, 0.105);
+      shape.lineTo(0.055, -0.28);
+      shape.closePath();
+      geometry = new THREE.ShapeGeometry(shape);
+      material = new THREE.MeshBasicMaterial({ color: '#7fff9f', transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+    } else return null;
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.y = 0.025;
+    mesh.renderOrder = 4;
+    return mesh;
+  }
+  function placeArrow(mesh) {
+    if (!mesh) return;
+    const p = camera.pos();
+    const yaw = camera.yaw;
+    const offset = 0.58;
+    mesh.position.set(p.x - Math.sin(yaw) * offset, 0.025, p.z - Math.cos(yaw) * offset);
+    mesh.rotation.set(-Math.PI / 2, yaw, 0);
+  }
+  function removeArrowMesh(mesh) {
+    if (!mesh) return;
+    render?.scene?.remove(mesh);
+    mesh.geometry?.dispose?.();
+    mesh.material?.dispose?.();
+  }
+  function clearArrowMeshes() {
+    if (previewArrow) removeArrowMesh(previewArrow);
+    previewArrow = null;
+    for (const mesh of arrowMeshes) removeArrowMesh(mesh);
+    arrowMeshes.length = 0;
+    arrowTexture?.dispose?.();
+    arrowTexture = null;
+    arrowGesture = false;
+  }
+  function updateArrowDrawing() {
+    const held = !!input.isArrowDrawing;
+    if (held && !arrowGesture) {
+      arrowGesture = true;
+      if (getArrowCount() > 0) {
+        previewArrow = createArrowMesh(0.38);
+        if (previewArrow) render.scene.add(previewArrow);
+      } else {
+        events.emit('arrow-empty', { arrows: 0 });
+      }
+    }
+    if (held && previewArrow) placeArrow(previewArrow);
+    if (!held && arrowGesture) {
+      arrowGesture = false;
+      if (previewArrow && spendArrow()) {
+        removeArrowMesh(previewArrow);
+        previewArrow = null;
+        const mesh = createArrowMesh(0.85);
+        if (mesh) {
+          placeArrow(mesh);
+          render.scene.add(mesh);
+          arrowMeshes.push(mesh);
+          while (arrowMeshes.length > 50) removeArrowMesh(arrowMeshes.shift());
+          events.emit('arrow-placed', { arrows: getArrowCount(), placed: arrowMeshes.length });
+        }
+      } else if (previewArrow) {
+        removeArrowMesh(previewArrow);
+        previewArrow = null;
+      }
+    }
+  }
+  function useActiveItem() {
+    const active = inventory.getActive();
+    if (!active || active.type !== 'food' || stamina >= 100) return false;
+    const consumed = inventory.consume(inventory.getActiveIndex(), 1);
+    if (!consumed) return false;
+    stamina = Math.min(100, stamina + 35);
+    hud && hud.setStats && hud.setStats(state());
+    events.emit('food-used', { item: consumed, restore: 35, stamina });
+    return true;
   }
   function applyLevel(level) {
     levelId = level.id;
@@ -59,6 +215,7 @@ export function createGame(ctx) {
       stepSurface: level.stepSurface || biome.stepSurface || 'carpet'
     };
     resetRunState();
+    clearArrowMeshes();
     if (render && render.applyFog) render.applyFog(biome);
     if (manualWorld) { manualWorld.dispose(); manualWorld = null; colliderAdapter = null; }
     interact.setItems([]);
@@ -73,8 +230,6 @@ export function createGame(ctx) {
     }
     const spawn = manualWorld && manualWorld.spawns && manualWorld.spawns[0];
     if (spawn) { camera.setPos(spawn.x, spawn.z); lastStep.x = spawn.x; lastStep.z = spawn.z; }
-    const prog = save && save.progress ? save.progress() : null;
-    inventory.notes = prog && prog.notes && prog.notes[levelId] ? prog.notes[levelId].length : 0;
     hud && hud.setLevel(level.name || level.id);
     hud && hud.setStats && hud.setStats(state());
     events.emit('level-loaded', { id: level.id, config });
@@ -112,6 +267,7 @@ export function createGame(ctx) {
     if (!running || paused || disposed) return;
     time += dt;
     tickPlayerState(dt);
+    updateArrowDrawing();
     hud && hud.setTime(time);
     if ((input.sprint || sprintHeld) && lastMoving && stamina > 0) stamina -= 20 * dt;
     else stamina += 12 * dt;
@@ -139,6 +295,8 @@ export function createGame(ctx) {
       if (a === 'interact') {
         const n = interact.nearest(p.x, p.z);
         if (n) doInteract(n);
+      } else if (a === 'useItem') {
+        useActiveItem();
       }
     }
     render && render.render();
@@ -162,21 +320,34 @@ export function createGame(ctx) {
       return;
     }
     if (item.type === 'note') {
+      const progress = save && typeof save.progress === 'function' ? save.progress() : null;
+      const knownNotes = progress && progress.notes && progress.notes[levelId] || [];
+      const alreadyKnown = knownNotes.includes(item.id);
+      if (!alreadyKnown && inventory.add({ id: item.id, type: 'note', count: 1, data: item.data }) < 0) {
+        events.emit('inventory-full', { item });
+        return;
+      }
       item.taken = true;
       hideItem(item);
       const loreIndex = item.data && item.data.loreIndex != null ? item.data.loreIndex : null;
-      const added = save && save.addNote ? save.addNote(levelId, item.id) : false;
-      if (added) inventory.notes++;
+      const added = save && save.addNote ? save.addNote(levelId, item.id) : !alreadyKnown;
       const lore = loreIndex != null && config && config.lore ? config.lore[loreIndex] : null;
-      events.emit('note-taken', { item, loreIndex, lore, inventory: state().inventory });
+      events.emit('note-taken', { item, loreIndex, lore, added, inventory: state().inventory });
       return;
     }
     if (item.type === 'item') {
+      const kind = item.data && item.data.kind || 'bottle';
+      const type = kind === 'bottle' ? 'water' : kind;
+      const add = type === 'water' ? Math.max(1, Math.floor(Number(item.data && item.data.water) || 1)) : Math.max(1, Math.floor(Number(item.data && item.data.count) || 1));
+      const slotIndex = inventory.add({ id: item.id, type, count: add, data: item.data });
+      if (slotIndex < 0) {
+        events.emit('inventory-full', { item });
+        return;
+      }
       item.taken = true;
       hideItem(item);
-      const add = Number(item.data && item.data.water) || 1;
-      inventory.water += add;
-      events.emit('item-taken', { item, add, inventory: state().inventory });
+      if (type === 'spraycan') addArrows(add * 10);
+      events.emit('item-taken', { item, type, add, slotIndex, arrows: getArrowCount(), inventory: state().inventory });
       return;
     }
     if (item.type === 'door') {
@@ -210,7 +381,7 @@ export function createGame(ctx) {
   const loop = createLoop({ tick });
   return {
     input, camera, events,
-    services: { interact },
+    services: { interact, inventory },
     get config() { return config; },
     get levelId() { return levelId; },
     get time() { return time; },
@@ -220,12 +391,20 @@ export function createGame(ctx) {
     colliderAdapter: () => colliderAdapter,
     tickPlayerState,
     setSprint,
+    setArrowDrawing(value) { input.setArrowDrawing(!!value); },
+    selectSlot(index) {
+      const selected = inventory.selectSlot(index);
+      if (selected) hud && hud.setStats && hud.setStats(state());
+      return selected;
+    },
+    useActiveItem,
     state,
     loadLevel(level) {
       if (!level || typeof level !== 'object') throw new Error('loadLevel: нет уровня');
       if (level.chunked) {
         levelId = level.id;
         resetRunState();
+        clearArrowMeshes();
         config = { id: level.id, seed: level.seed || 1, chunked: true, biome: level.biome || null, story: level.story || null, lore: level.lore || [], ambient: level.ambient || null, sanityDrain: level.sanityDrain || 0, stepSurface: level.stepSurface || 'carpet' };
         manualWorld = null;
         colliderAdapter = null;
@@ -248,6 +427,7 @@ export function createGame(ctx) {
     },
     pause() {
       if (!running || paused) return;
+      input.setArrowDrawing(false);
       paused = true;
       loop.stop();
       events.emit('pause');
