@@ -74,6 +74,7 @@ export function initTerminal(doc = document, win = globalThis, opts = {}) {
       if (el._state) el._state.textContent = 'выбрана';
       refreshEnter();
     });
+    else el.addEventListener('click', () => { const t = $(doc, 'update-toast'); if (t) { t.textContent = 'Уровень заблокирован: пройди предыдущий'; t.hidden = false; } });
     grid.appendChild(el);
   }
   if (!levels.length) { const empty = doc.createElement('p'); empty.className = 'empty'; empty.textContent = 'Уровни ещё не собраны.'; grid.appendChild(empty); }
@@ -105,6 +106,8 @@ export function initTerminal(doc = document, win = globalThis, opts = {}) {
   });
   const abyssEl = $(doc, 'abyss-card');
   if (abyssEl) abyssEl.addEventListener('click', () => { win.location.href = './game.html?id=' + abyss.id; });
+  const exitBtn = $(doc, 'exit-btn');
+  if (exitBtn) exitBtn.addEventListener('click', () => { try { win.close(); } catch (e) {} const t = $(doc, 'update-toast'); if (t) { t.textContent = 'Закрой вкладку браузера, чтобы выйти'; t.hidden = false; } });
   initSwUpdate(win, doc, 'update-toast');
   startBackground(win, doc);
   return { levels, save };

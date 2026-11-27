@@ -11,25 +11,32 @@
 <link rel="stylesheet" href="./ui/terminal.css">
 </head>
 <body>
-<canvas id="bg"></canvas>
-<div class="holo-grid" aria-hidden="true"></div>
-<div class="scan" aria-hidden="true"></div>
+<div id="bg" class="bg-img"><i class="lamps"></i><i class="exit-glow"></i></div>
+<div class="veil"></div>
+<div class="scan"></div>
 <header class="top">
-  <span class="brand">BACKROOMS</span>
+  <div class="brand-wrap"><span class="logo">◉</span><div class="brand-col"><span class="brand">BACKROOMS</span><span class="sub">ЛИМИНАЛЬНЫЙ КОМПЛЕКС</span></div></div>
   <span class="count">уровней: <b id="level-count">0</b></span>
 </header>
 <main id="menu" class="menu">
-  <h1 class="glitch">ЗАКУЛИСЬЕ</h1>
-  <p class="lead">Ты вышел из реальности не там, где надо. Найди выход. Не дай присутствию накопиться.</p>
-  <button id="play-btn" class="holo-btn primary" type="button">ИГРАТЬ</button>
-  <button id="settings-btn" class="holo-btn" type="button">НАСТРОЙКИ</button>
-  <button id="install-btn" class="holo-btn" type="button">УСТАНОВИТЬ ПРИЛОЖЕНИЕ</button>
+  <button id="play-btn" class="menu-btn primary" type="button"><span class="ico">▶</span>ИГРАТЬ</button>
+  <button id="settings-btn" class="menu-btn" type="button"><span class="ico">⚙</span>НАСТРОЙКИ</button>
+  <button id="exit-btn" class="menu-btn" type="button"><span class="ico">⏻</span>ВЫХОД</button>
+</main>
+<aside class="info">
+  <h2>КОМПЛЕКС «ЗАКУЛИСЬЕ»</h2>
+  <p>Жёлтые стены, гул ламп, мокрый ковёр. Найди выход. Не дай присутствию накопиться.</p>
+  <div class="status"><i></i>Статус: <b>В СЕТИ</b></div>
   <section class="stats">
     <div class="tile"><b id="stats-unlocked">0</b><span>открыто</span></div>
     <div class="tile"><b id="stats-notes">0</b><span>записок</span></div>
     <div class="tile"><b id="stats-deaths">0</b><span>смертей</span></div>
   </section>
-</main>
+</aside>
+<div class="bottom">
+  <span class="foot">Не выходи из реальности повторно. Это не сон.</span>
+  <button id="install-btn" class="chip" type="button">УСТАНОВИТЬ ПРИЛОЖЕНИЕ</button>
+</div>
 <section id="level-panel" class="panel" hidden>
   <div class="panel-head"><h2>ВЫБОР УРОВНЯ</h2><button id="level-back" class="holo-btn small" type="button">НАЗАД</button></div>
   <main id="level-grid" class="grid"></main>
@@ -51,7 +58,6 @@
   <label class="row"><span>Звук</span><input id="sound-check" type="checkbox" checked></label>
 </section>
 <button id="update-toast" class="toast" type="button" hidden></button>
-<footer class="foot">Не выходи из реальности повторно. Это не сон.</footer>
 <script type="module" src="./ui/terminal.js"></script>
 </body>
 </html>
