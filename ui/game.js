@@ -89,9 +89,9 @@ async function main() {
     if (!level) { fatal(document, new Error('уровень не найден: ' + levelId)); return; }
     const THREE = await import('../vendor/three.module.js');
     const canvas = $('game');
-    const render = createRender(THREE, canvas, { quality: save.settings().quality || 'medium', adaptive: save.settings().adaptive !== false });
     const save = createSave();
     if (!save.settings().sensV2) save.setSettings({ sens: 1, sensV2: true });
+    const render = createRender(THREE, canvas, { quality: save.settings().quality || 'medium', adaptive: save.settings().adaptive !== false });
     const hud = createHud(document);
     const audio = createAudio();
     let noteOpen = false;
