@@ -1,69 +1,88 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0803">
-<title>BACKROOMS — терминал</title>
+<title>BACKROOMS</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./assets/icon-192.png" type="image/png">
-<link rel="apple-touch-icon" href="./assets/icon-192.png">
-<style>
-html{background:#0b0803}body{margin:0;background:#0b0803;color:#e8d27a;font-family:"Courier New",ui-monospace,monospace}
-[hidden]{display:none!important}
-.menu{position:fixed;left:16px;right:16px;bottom:84px;display:flex;flex-direction:column;gap:12px;z-index:3}
-.menu-btn{display:flex;align-items:center;gap:14px;background:#14100a;color:#e8d27a;border:1px solid #3a2f14;padding:16px;font:inherit;font-size:16px;letter-spacing:.1em;min-height:56px;cursor:pointer}
-.menu-btn svg{width:22px;height:22px;flex:0 0 22px}
-.rotate-gate{position:fixed;inset:0;z-index:60;background:#0b0803;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
-.rg-box svg{width:72px;height:72px}
-</style>
 <link rel="stylesheet" href="./ui/terminal.css">
+<style>
+html,body{margin:0;height:100%;background:#0b0803;color:#f3e6b0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;background:#14100a;border:1px solid #3a2f14;border-radius:10px;padding:12px 16px;min-height:48px}
+[hidden]{display:none!important}
+#level-panel,#settings-panel{position:fixed;inset:0;background:#0b0803}
+
+@media (orientation:landscape){#rotate-gate{display:none}}
+</style>
 </head>
 <body>
-<canvas id="bg3d"></canvas>
-<div id="bg" class="bg-img"><i class="wall wl"></i><i class="wall wr"></i><i class="lamps"></i><i class="exit-glow"></i></div>
-<div class="veil"></div>
-<div class="scan"></div>
-<div id="rotate-gate" class="rotate-gate"><div class="rg-box"><svg viewBox="0 0 48 48" width="72" height="72" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="7" width="12" height="22" rx="2.5"/><path d="M9 26c0 8 7 14 15 14"/><path d="M20 36l4 4 4-4"/></svg><h2>ПОВЕРНИ ЭКРАН</h2><p>Горизонтальный режим — полный обзор коридора</p><button id="rotate-skip" class="holo-btn small" type="button">ПРОДОЛЖИТЬ ВЕРТИКАЛЬНО</button></div></div>
-<header class="top">
-  <div class="brand-wrap"><svg class="logo" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 5v10l-8 5-8-5V7z"/><circle cx="12" cy="12" r="3"/></svg><div class="brand-col"><span class="brand">BACKROOMS</span><span class="sub">АВТОНОМНЫЙ СЕКТОР · ОНЛАЙН</span></div></div>
-  <span class="count">уровней: <b id="level-count">0</b></span>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 5.2v-3.4l-2.2-.5a6.6 6.6 0 0 0-.8-1.9l1.2-1.9-2.4-2.4-1.9 1.2a6.600 6.600 0 0 0-1.900-.8L12.900 1.600H9.500l-.5 2.200c-.7.200-1.300.5-1.900.8L5.200 3.400 2.800 5.800 4 7.700c-.4.600-.6 1.200-.8 1.900l-2.200.5v3.400l2.200.5c.2.700.5 1.300.8 1.900l-1.200 1.900 2.400 2.400 1.900-1.200c.6.400 1.200.6 1.900.8l.5 2.200h3.400l.5-2.200c.7-.2 1.300-.5 1.900-.8l1.900 1.200 2.400-2.400-1.200-1.900c.4-.6.600-1.200.8-1.900z" transform="translate(.4 -.1) scale(.96)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-exit" viewBox="0 0 24 24"><path d="M10 3H5v18h5M9 12h11m-4-4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 2l8.700 5v10L12 22l-8.700-5V7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 7v10M8 9.500v5M16 9.500v5" stroke="currentColor" stroke-width="1.600" stroke-linecap="round"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.500v5h3.500L12 18.500v-13L7.500 9.500z" fill="currentColor"/><path d="M15.500 9a4.500 4.500 0 0 1 0 6M18 6.500a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" class="waves"/><path d="M15 9l6 6m0-6-6 6" stroke="#ff6a4a" stroke-width="2" stroke-linecap="round" class="mute-x"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 48 48"><rect x="14" y="6" width="20" height="36" rx="4" fill="none" stroke="currentColor" stroke-width="2.500"/><path d="M21 37h6" stroke="currentColor" stroke-width="2.500" stroke-linecap="round"/><path d="M40 20a14 14 0 0 0-6-9m0 0v6m0-6h-6" fill="none" stroke="#7fff9f" stroke-width="2.500" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.400" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div id="bg" class="bg-img" aria-hidden="true"><i class="lamp l1"></i><i class="lamp l2"></i><i class="lamp l3"></i><i class="exit"></i></div>
+<canvas id="bg3d" aria-hidden="true"></canvas>
+<div class="fx veil"></div><div class="fx scan"></div><div class="fx grain"></div><div class="fx vig"></div>
+
+<header id="top">
+  <div class="brand">
+    <svg class="logo" width="40" height="40" aria-hidden="true"><use href="#i-logo"/></svg>
+    <div><h1>BACKROOMS</h1><p class="sub">Терминал комплекса <span class="dot">/</span> <span id="level-count">0 уровней</span></p></div>
+  </div>
+  <button id="sound-btn" class="icon-btn" type="button" aria-label="Звук" aria-pressed="true"><svg width="24" height="24" aria-hidden="true"><use href="#i-sound"/></svg></button>
 </header>
-<main id="menu" class="menu">
-  <button id="play-btn" class="menu-btn primary" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>ИГРАТЬ</button>
-  <button id="settings-btn" class="menu-btn" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm9 4l-2.2-.6-.5-1.2 1.2-1.9-1.8-1.8-1.9 1.2-1.2-.5L14 5h-4l-.6 2.2-1.2.5-1.9-1.2-1.8 1.8 1.2 1.9-.5 1.2L3 12l2.2.6.5 1.2-1.2 1.9 1.8 1.8 1.9-1.2 1.2.5L10 19h4l.6-2.2 1.2-.5 1.9 1.2 1.8-1.8-1.2-1.9.5-1.2z"/></svg>НАСТРОЙКИ</button>
-  <button id="exit-btn" class="menu-btn" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h9"/></svg>ВЫХОД</button>
-</main>
-<aside class="info">
-  <h2>КОМПЛЕКС «ЗАКУЛИСЬЕ»</h2>
-  <p>Жёлтые стены, гул ламп, мокрый ковёр. Найди выход. Не дай присутствию накопиться.</p>
-  <div class="status"><i></i>Статус: <b>В СЕТИ</b></div>
-  <section class="stats">
-    <div class="tile"><b id="stats-unlocked">0</b><span>открыто</span></div>
-    <div class="tile"><b id="stats-notes">0</b><span>записок</span></div>
-    <div class="tile"><b id="stats-deaths">0</b><span>смертей</span></div>
-  </section>
+
+<nav id="menu" aria-label="Главное меню">
+  <button id="play-btn" class="btn primary" type="button"><svg width="22" height="22" aria-hidden="true"><use href="#i-play"/></svg><span>ИГРАТЬ</span></button>
+  <button id="settings-btn" class="btn" type="button"><svg width="22" height="22" aria-hidden="true"><use href="#i-gear"/></svg><span>НАСТРОЙКИ</span></button>
+  <button id="exit-btn" class="btn" type="button"><svg width="22" height="22" aria-hidden="true"><use href="#i-exit"/></svg><span>ВЫХОД</span></button>
+</nav>
+
+<aside id="info" aria-label="Данные комплекса">
+  <div class="info-h"><span>КОМПЛЕКС</span><span class="status"><i></i>В СЕТИ</span></div>
+  <dl>
+    <div><dt>Открыто секторов</dt><dd id="stats-unlocked">0</dd></div>
+    <div><dt>Найдено записок</dt><dd id="stats-notes">0</dd></div>
+    <div><dt>Смертей</dt><dd id="stats-deaths" class="bad">0</dd></div>
+  </dl>
+  <div class="chips"><span class="chip">ГУЛ ЛАМП 60 ГЦ</span><span class="chip">ВЛАЖНОСТЬ 71%</span><span class="chip bad">КЛАСС ОПАСНОСТИ 1</span></div>
+  <p class="note">Не бегай по коридорам. Не оглядывайся. Ищи зелёный свет.</p>
 </aside>
-<div class="bottom">
-  <span class="foot">Не выходи из реальности повторно. Это не сон.</span>
-  <button id="install-btn" class="chip" type="button">УСТАНОВИТЬ ПРИЛОЖЕНИЕ</button>
+
+<footer id="bottom"><span class="line">Сектор: Лобби  &nbsp;/&nbsp;  Сохранение автоматическое</span><button id="install-btn" class="btn small" type="button">УСТАНОВИТЬ ПРИЛОЖЕНИЕ</button></footer>
+
+<section id="level-panel" class="panel" hidden aria-label="Выбор уровня">
+  <div class="pn-head"><button id="level-back" class="btn small" type="button"><svg width="20" height="20" aria-hidden="true"><use href="#i-back"/></svg><span>НАЗАД</span></button><h2>ВЫБОР УРОВНЯ</h2></div>
+  <div class="pn-body"><div id="level-grid"></div>
+    <button id="abyss-card" class="abyss" type="button"><b>БЕЗДНА</b><span>Бесконечный спуск. Возврата нет.</span></button></div>
+  <div class="pn-foot"><button id="enter-btn" class="btn primary" type="button" disabled>НАЧАТЬ</button></div>
+</section>
+
+<section id="settings-panel" class="panel" hidden aria-label="Настройки">
+  <div class="pn-head"><button id="settings-back" class="btn small" type="button"><svg width="20" height="20" aria-hidden="true"><use href="#i-back"/></svg><span>НАЗАД</span></button><h2>НАСТРОЙКИ</h2></div>
+  <div class="pn-body form">
+    <label class="row"><span>Чувствительность <b id="sens-val">1.0</b></span><input id="sens-range" type="range" min="1" max="10" step="0.1" value="1"></label>
+    <label class="row"><span>Качество графики</span><select id="quality-select"><option value="low">Низкое</option><option value="medium">Среднее</option><option value="high">Высокое</option></select></label>
+    <label class="row chk"><span>Вибрация</span><input id="vibration-check" type="checkbox"></label>
+    <label class="row chk"><span>Звук</span><input id="sound-check" type="checkbox"></label>
+  </div>
+</section>
+
+<div id="rotate-gate" role="dialog" aria-label="Поверни экран">
+  <svg width="96" height="96" aria-hidden="true"><use href="#i-rotate"/></svg>
+  <h2>ПОВЕРНИ ЭКРАН</h2>
+  <p>Игра рассчитана на горизонтальный режим.</p>
+  <button id="rotate-skip" class="btn" type="button">ПРОДОЛЖИТЬ ВЕРТИКАЛЬНО</button>
 </div>
-<section id="level-panel" class="panel" hidden>
-  <div class="panel-head"><h2>ВЫБОР УРОВНЯ</h2><button id="level-back" class="holo-btn small" type="button">НАЗАД</button></div>
-  <main id="level-grid" class="grid"></main>
-  <section id="abyss-card" class="card abyss"><span class="card-num">∞</span><h3>Бездна</h3><span class="card-danger">класс ∞</span><p class="card-tags">бесконечность, стихии глубины, без финала</p><span class="card-state">вход из терминала</span></section>
-  <button id="enter-btn" class="holo-btn primary" type="button">ВЫБЕРИ УРОВЕНЬ</button>
-</section>
-<section id="settings-panel" class="panel" hidden>
-  <div class="panel-head"><h2>НАСТРОЙКИ</h2><button id="settings-back" class="holo-btn small" type="button">НАЗАД</button></div>
-  <label class="row"><span>Чувствительность</span><output id="sens-val">1.00</output></label>
-  <input id="sens-range" class="range" type="range" min="1" max="10" step="0.1" value="1">
-  <label class="row"><span>Качество</span></label>
-  <select id="quality-select" class="select"><option value="low">low</option><option value="medium" selected>medium</option><option value="high">high</option></select>
-  <label class="row"><span>Вибрация</span><input id="vibration-check" type="checkbox" checked></label>
-  <label class="row"><span>Звук</span><input id="sound-check" type="checkbox" checked></label>
-</section>
-<button id="update-toast" class="toast" type="button" hidden></button>
+
+<div id="update-toast" role="status" aria-live="polite" hidden></div>
 <script type="module" src="./ui/terminal.js"></script>
 </body>
 </html>

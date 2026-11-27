@@ -16,8 +16,8 @@ export const level = {
       floor: { base: '#8a7a3a', dark: '#5f5428', light: '#b3a46a' },
       ceiling: { base: '#b7a98a', dark: '#665d49', light: '#d6cdb4' }
     },
-    fog: { color: '#2f2812', near: 13, far: 78 },
-    hemi: 0.95, ambientLight: 0.38, dirLight: 0.34,
+    fog: { color: '#342b15', near: 10, far: 54 },
+    hemi: 1.08, ambientLight: 0.32,
     ambient: 'hum', entityType: 'none', entitySpeed: 0,
     openSky: false, water: false, bounds: { w: 24, d: 24 }
   },

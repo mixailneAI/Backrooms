@@ -7,6 +7,7 @@ import { manualAdapter, moveWithSlide } from './physics.js';
 import { bus } from '../core/events.js';
 export function createGame(ctx) {
   const { render, save, hud, onState, THREE } = ctx;
+  const readSettings = () => save && (typeof save.settings === 'function' ? save.settings() : save.settings) || {};
   const input = createInput();
   const camera = createCamera();
   const interact = createInteract();
@@ -26,6 +27,9 @@ export function createGame(ctx) {
   let inventory = { water: 0, notes: 0 };
   const lastStep = { x: 0, z: 0 };
   function resetRunState() {
+    input.reset?.();
+    sprintHeld = false;
+    events.emit('sprint', { on: false });
     sanity = 100;
     stamina = 100;
     inventory = { water: 0, notes: 0 };
@@ -57,6 +61,7 @@ export function createGame(ctx) {
     resetRunState();
     if (render && render.applyFog) render.applyFog(biome);
     if (manualWorld) { manualWorld.dispose(); manualWorld = null; colliderAdapter = null; }
+    interact.setItems([]);
     if (level.chunked) { manualWorld = null; colliderAdapter = null; return; }
     const createManualWorld = ctx.worldModule && ctx.worldModule.createManualWorld;
     if (typeof level.build === 'function' && render && render.scene && createManualWorld) {
@@ -97,7 +102,7 @@ export function createGame(ctx) {
     camera.applyTo(render && render.camera);
     const look = input.consumeLook();
     if (look.x || look.y) {
-      const raw = Number((save && save.settings().sens) || 1);
+      const raw = Number(readSettings().sens ?? readSettings().sensitivity ?? 1);
       const sens = Math.min(10, Math.max(1, raw));
       const mult = 0.0066 * Math.sqrt(sens);
       camera.addLook(look.x, look.y, mult);
@@ -128,6 +133,7 @@ export function createGame(ctx) {
       if (n) prompt = n.label || n.type;
     }
     hud && hud.setPrompt(prompt);
+    manualWorld?.update?.(time);
     const actions = input.consumeActions();
     for (const a of actions) {
       if (a === 'interact') {
@@ -218,10 +224,13 @@ export function createGame(ctx) {
     loadLevel(level) {
       if (!level || typeof level !== 'object') throw new Error('loadLevel: нет уровня');
       if (level.chunked) {
+        levelId = level.id;
         resetRunState();
         config = { id: level.id, seed: level.seed || 1, chunked: true, biome: level.biome || null, story: level.story || null, lore: level.lore || [], ambient: level.ambient || null, sanityDrain: level.sanityDrain || 0, stepSurface: level.stepSurface || 'carpet' };
         manualWorld = null;
         colliderAdapter = null;
+        interact.setItems([]);
+        if (render && render.applyFog) render.applyFog(level.biome || {});
         hud && hud.setLevel(level.name || level.id);
         hud && hud.setStats && hud.setStats(state());
         events.emit('level-loaded', { id: level.id, config });
@@ -235,6 +244,7 @@ export function createGame(ctx) {
       paused = false;
       loop.start();
       events.emit('start', { id: levelId });
+      onState && onState('play');
     },
     pause() {
       if (!running || paused) return;
@@ -252,6 +262,8 @@ export function createGame(ctx) {
     },
     interact() {
       const p = camera.pos();
+      const context = interact.context(p.x, p.z);
+      if (!context) return false;
       const n = interact.nearest(p.x, p.z);
       if (n) { doInteract(n); return true; }
       return false;

@@ -1,37 +1,129 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#0d0b06">
-<title>BACKROOMS</title>
+<meta name="description" content="BACKROOMS — одиночный хоррор-эксплорер в бесконечных коридорах.">
+<link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./assets/icon-192.png" type="image/png">
+<title>BACKROOMS / GAME</title>
 <link rel="stylesheet" href="./ui/game.css">
 </head>
 <body>
-<div id="fatal" class="overlay fatal" hidden><div class="box"><h2>Фатальная ошибка</h2><pre id="fatal-stack"></pre><button id="fatal-home" class="btn" type="button">В терминал</button></div></div>
-<div id="pause" class="overlay" hidden><div class="box"><h2>Пауза</h2><button id="pause-resume" class="btn primary" type="button">Продолжить</button><button id="pause-settings" class="btn" type="button">Настройки</button><button id="pause-fullscreen" class="btn" type="button">На весь экран</button><button id="pause-home" class="btn" type="button">В терминал</button></div></div>
-<div id="settings" class="overlay" hidden><div class="box"><h2>Настройки</h2><label class="row"><span>Чувствительность</span><output id="sens-val">1.00</output></label><input id="sens-range" class="range" type="range" min="1" max="10" step="0.1" value="1"><label class="row"><span>Качество</span><output id="quality-val">medium</output></label><select id="quality-select" class="select"><option value="low">low</option><option value="medium" selected>medium</option><option value="high">high</option></select><label class="row"><span>Адаптивный FPS</span><input id="adaptive-check" type="checkbox" checked></label><button id="settings-close" class="btn primary" type="button">Готово</button></div></div>
-<div id="death" class="overlay" hidden><div class="box"><h2>Ты умер</h2><p id="death-cause"></p><button id="death-retry" class="btn primary" type="button">Ещё раз</button><button id="death-home" class="btn" type="button">В терминал</button></div></div>
-<div id="win" class="overlay" hidden><div class="box"><h2>Уровень пройден</h2><button id="win-next" class="btn primary" type="button">Дальше</button><button id="win-home" class="btn" type="button">В терминал</button></div></div>
-<div id="note" class="overlay" hidden><div class="box note-box"><h2 id="note-title">Записка</h2><p id="note-text"></p><button id="note-close" class="btn primary" type="button">Закрыть</button></div></div>
-<canvas id="game" touch-action="none"></canvas>
+<svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="g-pause" viewBox="0 0 24 24"><path d="M7 5v14M17 5v14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="g-play" viewBox="0 0 24 24"><path d="M7 4.5v15L19 12z" fill="currentColor"/></symbol>
+  <symbol id="g-run" viewBox="0 0 24 24"><path d="M4 5l7 7-7 7V5zm9 0l7 7-7 7V5z" fill="currentColor"/></symbol>
+  <symbol id="g-eye" viewBox="0 0 24 24"><path d="M2.5 12s3.2-6 9.5-6 9.5 6 9.5 6-3.2 6-9.5 6-9.5-6-9.5-6z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="g-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="g-note" viewBox="0 0 24 24"><path d="M6 3.5h8l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M14 3.5v4h4M8 12h8M8 15.5h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="g-water" viewBox="0 0 24 24"><path d="M9 3h6v3l1.5 2v11a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2V8L9 6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.5 13h9M10 16.5h4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="g-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="g-settings" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM20 13.5v-3l-2-.5a6.7 6.7 0 0 0-.8-1.8l1.1-1.8-2.1-2.1-1.8 1.1a6.7 6.7 0 0 0-1.8-.8l-.5-2h-3l-.5 2a6.7 6.7 0 0 0-1.8.8L5 4.3 2.9 6.4 4 8.2a6.7 6.7 0 0 0-.8 1.8l-2 .5v3l2 .5a6.7 6.7 0 0 0 .8 1.8l-1.1 1.8L5 19.7 6.8 18.6a6.7 6.7 0 0 0 1.8.8l.5 2h3l.5-2a6.7 6.7 0 0 0 1.8-.8l1.8 1.1 2.1-2.1-1.1-1.8a6.7 6.7 0 0 0 .8-1.8z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/></symbol>
+  <symbol id="g-volume" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M16 9a4 4 0 0 1 0 6m2.5-8.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="g-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="g-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 10.5v5M12 7.5h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</svg>
+
+<div id="fatal" class="overlay fatal" hidden>
+  <section class="dialog-card">
+    <div class="eyebrow">СИСТЕМНЫЙ СБОЙ</div>
+    <h2>Фатальная ошибка</h2>
+    <pre id="fatal-stack"></pre>
+    <button id="fatal-home" class="btn primary" type="button">В терминал</button>
+  </section>
+</div>
+
+<div id="pause" class="overlay" hidden>
+  <section class="dialog-card pause-card">
+    <div class="eyebrow">СЕАНС ПРИОСТАНОВЛЕН</div>
+    <h2>Пауза</h2>
+    <button id="pause-resume" class="btn primary" type="button"><svg><use href="#g-play"/></svg><span>Продолжить</span></button>
+    <button id="pause-settings" class="btn" type="button"><svg><use href="#g-settings"/></svg><span>Настройки</span></button>
+    <button id="pause-fullscreen" class="btn" type="button"><svg><use href="#g-eye"/></svg><span>На весь экран</span></button>
+    <button id="pause-home" class="btn quiet" type="button"><svg><use href="#g-back"/></svg><span>В терминал</span></button>
+  </section>
+</div>
+
+<div id="settings" class="overlay" hidden>
+  <section class="dialog-card settings-card">
+    <div class="eyebrow">КОНФИГУРАЦИЯ СЕАНСА</div>
+    <h2>Настройки</h2>
+    <label class="setting-row" for="sens-range"><span>Чувствительность</span><output id="sens-val">1.0</output></label>
+    <input id="sens-range" class="range" type="range" min="1" max="10" step="0.1" value="1">
+    <label class="setting-row" for="quality-select"><span>Качество графики</span><output id="quality-val">medium</output></label>
+    <select id="quality-select" class="select"><option value="low">Низкое</option><option value="medium" selected>Среднее</option><option value="high">Высокое</option></select>
+    <label class="toggle-row"><span>Адаптивный FPS</span><input id="adaptive-check" type="checkbox" checked><i></i></label>
+    <label class="toggle-row"><span>Звуковое оформление</span><input id="game-sound-check" type="checkbox" checked><i></i></label>
+    <label class="toggle-row"><span>Вибрация</span><input id="game-vibration-check" type="checkbox" checked><i></i></label>
+    <button id="settings-close" class="btn primary" type="button"><svg><use href="#g-check"/></svg><span>Готово</span></button>
+  </section>
+</div>
+
+<div id="death" class="overlay" hidden>
+  <section class="dialog-card outcome-card death-card">
+    <div class="eyebrow">СВЯЗЬ ПОТЕРЯНА</div>
+    <h2>Ты умер</h2>
+    <p id="death-cause"></p>
+    <button id="death-retry" class="btn primary" type="button"><svg><use href="#g-run"/></svg><span>Ещё раз</span></button>
+    <button id="death-home" class="btn quiet" type="button">В терминал</button>
+  </section>
+</div>
+
+<div id="win" class="overlay" hidden>
+  <section class="dialog-card outcome-card win-card">
+    <div class="eyebrow">СЕКТОР ПРОЙДЕН</div>
+    <h2>Выход найден</h2>
+    <button id="win-next" class="btn primary" type="button"><svg><use href="#g-play"/></svg><span>Дальше</span></button>
+    <button id="win-home" class="btn quiet" type="button">В терминал</button>
+  </section>
+</div>
+
+<div id="note" class="overlay note-overlay" hidden>
+  <section class="dialog-card note-box">
+    <div class="note-paper-edge"></div>
+    <div class="eyebrow">НАЙДЕННЫЙ ДОКУМЕНТ</div>
+    <h2 id="note-title">Записка</h2>
+    <p id="note-text"></p>
+    <button id="note-close" class="btn primary" type="button"><svg><use href="#g-check"/></svg><span>Понятно</span></button>
+  </section>
+</div>
+
+<canvas id="game" touch-action="none" aria-label="Игровой мир BACKROOMS"></canvas>
 <div id="fx" class="fx" aria-hidden="true"></div>
-<aside id="side">
-  <div class="side-head">СТАТУС</div>
-  <div class="bar"><span class="bar-label">Рассудок</span><div class="track"><i id="bar-sanity"></i></div><output id="val-sanity">100%</output></div>
-  <div class="bar"><span class="bar-label">Выносливость</span><div class="track"><i id="bar-stamina"></i></div><output id="val-stamina">100%</output></div>
-  <div class="inv-head">ИНВЕНТАРЬ</div>
-  <div class="inv"><div class="slot"><b id="inv-water">0</b><span>вода</span></div><div class="slot"><b id="inv-notes">0</b><span>записки</span></div></div>
+
+<aside id="side" aria-label="Состояние персонажа">
+  <div class="side-head"><span class="live-dot"></span>СОСТОЯНИЕ</div>
+  <div class="bar">
+    <div class="bar-head"><svg><use href="#g-eye"/></svg><span class="bar-label">Рассудок</span><output id="val-sanity">100%</output></div>
+    <div class="track"><i id="bar-sanity"></i></div>
+  </div>
+  <div class="bar">
+    <div class="bar-head"><svg><use href="#g-run"/></svg><span class="bar-label">Выносливость</span><output id="val-stamina">100%</output></div>
+    <div class="track"><i id="bar-stamina"></i></div>
+  </div>
+  <div class="inv-head">НАЙДЕНО</div>
+  <div class="inv">
+    <div class="slot"><span class="slot-icon"><svg><use href="#g-water"/></svg></span><b id="inv-water">0</b><span class="slot-label">Вода</span></div>
+    <div class="slot"><span class="slot-icon"><svg><use href="#g-note"/></svg></span><b id="inv-notes">0</b><span class="slot-label">Записки</span></div>
+  </div>
 </aside>
-<div id="hud"><div class="stat"><span class="k">Уровень</span><span id="hud-level">—</span></div><div class="stat"><span class="k">Время</span><span id="hud-time">00:00</span></div><div class="stat"><span class="k">Рядом</span><span id="hud-prompt">—</span></div></div>
-<button id="pause-btn" class="icon-btn touch-only" type="button" aria-label="Пауза"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
-<button id="sprint-btn" class="round-btn touch-only" type="button" aria-label="Бег"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M4 5l7 7-7 7V5zm9 0l7 7-7 7V5z"/></svg><span id="sprint-label">RUN</span></button>
-<button id="prompt" class="round-btn prompt touch-only" type="button" hidden>E</button>
-<p id="touch-hint" class="hint touch-only" hidden>Левая половина — ходьба, правая — обзор</p>
+
+<div id="hud" aria-live="polite">
+  <div class="stat"><svg><use href="#g-eye"/></svg><span class="k">СЕКТОР</span><strong id="hud-level">—</strong></div>
+  <div class="stat"><svg><use href="#g-clock"/></svg><span class="k">ВРЕМЯ</span><strong id="hud-time">00:00</strong></div>
+  <div class="stat nearby"><svg><use href="#g-info"/></svg><span class="k">РЯДОМ</span><strong id="hud-prompt">—</strong></div>
+</div>
+
+<button id="pause-btn" class="icon-btn touch-only" type="button" aria-label="Пауза"><svg><use href="#g-pause"/></svg></button>
+<button id="sprint-btn" class="round-btn touch-only" type="button" aria-label="Бег" aria-pressed="false"><svg><use href="#g-run"/></svg><span id="sprint-label">RUN</span></button>
+<button id="prompt" class="round-btn prompt touch-only" type="button" hidden><svg><use href="#g-check"/></svg><span id="prompt-label">E</span></button>
+<p id="touch-hint" class="hint touch-only" hidden>Левая зона — движение, правая — обзор</p>
 <div id="joystick" class="joy touch-only" hidden><div id="joy-knob" class="joy-knob"></div></div>
-<button id="toast" class="toast" type="button" hidden></button>
-<button id="update-toast" class="toast update" type="button" hidden>Обновление готово — нажми, чтобы применить</button>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden><svg><use href="#g-info"/></svg><span id="toast-message"></span></div>
+<button id="update-toast" class="toast update" type="button" hidden>Доступно обновление. Нажми, чтобы применить.</button>
+
 <script type="module" src="./ui/game.js"></script>
 </body>
 </html>

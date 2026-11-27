@@ -6,99 +6,139 @@ import { createHud } from '../engine/hud.js';
 import { createAudio } from '../engine/audio.js';
 import { initSwUpdate } from './sw-update.js';
 import { levels, byId } from '../levels/all.js';
+
 const $ = id => document.getElementById(id);
 const JOY_RADIUS = 58;
-const LOOK_SCALE = 1.0;
+const LOOK_SCALE = 1;
 const touchPointers = new Map();
-function isTouchDevice() { return 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0; }
-function vibrate(save) { try { if (save.settings().vibration && navigator.vibrate) navigator.vibrate(15); } catch (e) {} }
+const pressedControls = new Set();
+
+function isTouchDevice() {
+  return 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0;
+}
+function readSettings(save) {
+  return typeof save.settings === 'function' ? save.settings() : save.settings || {};
+}
+function vibrate(save) {
+  try { if (readSettings(save).vibration && navigator.vibrate) navigator.vibrate(15); } catch {}
+}
 function enterFullscreen(doc) {
   try {
-    const el = doc.documentElement;
-    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-    if (!req) return;
-    try {
-      const p = req.call(el, { navigationUI: 'hide' });
-      if (p && typeof p.catch === 'function') p.catch(() => { try { const p2 = req.call(el); if (p2 && p2.catch) p2.catch(() => {}); } catch (e2) {} });
-    } catch (e) {
-      try { req.call(el); } catch (e2) {}
-    }
-    try { if (globalThis.screen && screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e2) {}
-  } catch (e) {}
+    const root = doc.documentElement;
+    const request = root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
+    if (!request) return;
+    const result = request.call(root, { navigationUI: 'hide' });
+    result?.catch?.(() => {
+      try { request.call(root)?.catch?.(() => {}); } catch {}
+    });
+  } catch {}
 }
 function setJoyOrigin(x, y) {
-  const joy = $('joystick');
-  if (joy) { joy.style.left = (x - 63) + 'px'; joy.style.top = (y - 63) + 'px'; joy.hidden = false; }
+  const joystick = $('joystick');
+  if (joystick) {
+    joystick.style.left = (x - 63) + 'px';
+    joystick.style.top = (y - 63) + 'px';
+    joystick.hidden = false;
+  }
 }
 function setKnob(dx, dy) {
   const knob = $('joy-knob');
-  if (knob) knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+  if (knob) knob.style.transform = `translate(${dx}px,${dy}px)`;
 }
 function hideJoy() {
-  const joy = $('joystick');
-  const knob = $('joy-knob');
-  if (joy) joy.hidden = true;
+  const joystick = $('joystick'), knob = $('joy-knob');
+  if (joystick) joystick.hidden = true;
   if (knob) knob.style.transform = 'translate(0px,0px)';
 }
 function setupTouch(canvas, input) {
-  const half = () => window.innerWidth / 2;
-  canvas.addEventListener('pointerdown', e => {
-    if (e.pointerType !== 'touch') return;
-    e.preventDefault();
-    const left = e.clientX < half();
-    touchPointers.set(e.pointerId, { left, x: e.clientX, y: e.clientY, ox: e.clientX, oy: e.clientY });
-    if (left) { setJoyOrigin(e.clientX, e.clientY); input.setJoystick(0, 0); }
+  const split = () => window.innerWidth / 2;
+  canvas.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'touch') return;
+    event.preventDefault();
+    const left = event.clientX < split();
+    touchPointers.set(event.pointerId, { left, x: event.clientX, y: event.clientY, originX: event.clientX, originY: event.clientY });
+    if (left) {
+      setJoyOrigin(event.clientX, event.clientY);
+      input.setJoystick(0, 0);
+    }
   }, { passive: false });
-  canvas.addEventListener('pointermove', e => {
-    if (e.pointerType !== 'touch') return;
-    const p = touchPointers.get(e.pointerId);
-    if (!p) return;
-    e.preventDefault();
-    if (p.left) {
-      const dx = e.clientX - p.ox;
-      const dy = e.clientY - p.oy;
-      const len = Math.hypot(dx, dy);
-      if (len > 0) {
-        const s = Math.min(len, JOY_RADIUS) / JOY_RADIUS;
-        const cx = (dx / len) * Math.min(len, JOY_RADIUS);
-        const cy = (dy / len) * Math.min(len, JOY_RADIUS);
-        setKnob(cx, cy);
-        input.setJoystick((dx / len) * s, (dy / len) * s);
+  canvas.addEventListener('pointermove', event => {
+    if (event.pointerType !== 'touch') return;
+    const pointer = touchPointers.get(event.pointerId);
+    if (!pointer) return;
+    event.preventDefault();
+    if (pointer.left) {
+      const dx = event.clientX - pointer.originX;
+      const dy = event.clientY - pointer.originY;
+      const length = Math.hypot(dx, dy);
+      if (length > 0) {
+        const magnitude = Math.min(length, JOY_RADIUS) / JOY_RADIUS;
+        const capped = Math.min(length, JOY_RADIUS);
+        setKnob(dx / length * capped, dy / length * capped);
+        input.setJoystick(dx / length * magnitude, dy / length * magnitude);
       }
     } else {
-      const dx = e.clientX - p.x;
-      const dy = e.clientY - p.y;
-      p.x = e.clientX;
-      p.y = e.clientY;
+      const dx = event.clientX - pointer.x;
+      const dy = event.clientY - pointer.y;
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
       input.addLook(dx * LOOK_SCALE, dy * LOOK_SCALE);
     }
   }, { passive: false });
-  const release = e => {
-    if (e.pointerType !== 'touch') return;
-    const p = touchPointers.get(e.pointerId);
-    if (p && p.left) { input.setJoystick(0, 0); hideJoy(); }
-    touchPointers.delete(e.pointerId);
+  const release = event => {
+    if (event.pointerType !== 'touch') return;
+    const pointer = touchPointers.get(event.pointerId);
+    if (pointer?.left) { input.setJoystick(0, 0); hideJoy(); }
+    touchPointers.delete(event.pointerId);
   };
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
-  canvas.addEventListener('pointerleave', release);
+  canvas.addEventListener('lostpointercapture', release);
 }
+function bindPointerDown(element, callback) {
+  if (!element) return;
+  element.addEventListener('pointerdown', event => {
+    if (event.button !== undefined && event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const key = `${element.id}:${event.pointerId ?? 'primary'}`;
+    if (pressedControls.has(key)) return;
+    pressedControls.add(key);
+    try { element.setPointerCapture?.(event.pointerId); } catch {}
+    callback(event);
+  });
+  const release = event => {
+    const key = `${element.id}:${event.pointerId ?? 'primary'}`;
+    pressedControls.delete(key);
+  };
+  element.addEventListener('pointerup', release);
+  element.addEventListener('pointercancel', release);
+  element.addEventListener('lostpointercapture', release);
+}
+
 async function main() {
   try {
-    const levelId = parseId(location.search) || (levels[0] && levels[0].id);
+    const levelId = parseId(location.search) || levels[0]?.id;
     const level = levelId && byId[levelId];
     if (!level) { fatal(document, new Error('уровень не найден: ' + levelId)); return; }
+
     const THREE = await import('../vendor/three.module.js');
     const canvas = $('game');
     const save = createSave();
-    if (!save.settings().sensV2) save.setSettings({ sens: 1, sensV2: true });
-    const render = createRender(THREE, canvas, { quality: save.settings().quality || 'medium', adaptive: save.settings().adaptive !== false });
+    const settings = readSettings(save);
+    const render = createRender(THREE, canvas, { quality: settings.quality || 'medium', adaptive: settings.adaptive !== false });
     const hud = createHud(document);
-    const audio = createAudio();
+    const audio = createAudio({ volume: settings.sound === false ? 0 : 0.35 });
     let noteOpen = false;
     let toastTimer = 0;
-    let sprintHeld = false;
-    const showOverlay = (id, show) => { const el = $(id); if (el) el.hidden = !show; };
+    let sprintOn = false;
+
+    const showOverlay = (id, show) => { const element = $(id); if (element) element.hidden = !show; };
+    document.addEventListener('pointerdown', event => {
+      const button = event.target?.closest?.('button');
+      if (button && button.id !== 'prompt' && button.id !== 'toast' && button.id !== 'update-toast') audio.click();
+    }, true);
+
     const game = createGame({
       render, save, hud, THREE,
       worldModule: await import('../world/manual.js'),
@@ -107,27 +147,36 @@ async function main() {
         showOverlay('death', state === 'death');
         showOverlay('win', state === 'win');
         if (state === 'play') showOverlay('settings', false);
-        if (state === 'death') { const c = $('death-cause'); if (c) c.textContent = (detail && detail.cause) || ''; }
+        if (state === 'death') {
+          const cause = $('death-cause');
+          if (cause) cause.textContent = detail?.cause || '';
+        }
         document.body.classList.toggle('ui-open', state !== 'play' || noteOpen);
       }
     });
+
     document.body.classList.add('ui-open');
-    function showToast(text) {
-      const t = $('toast');
-      if (!t) return;
-      t.textContent = text;
-      t.hidden = false;
+    function showToast(message, kind = 'info') {
+      const toast = $('toast');
+      const label = $('toast-message');
+      if (!toast) return;
+      if (label) label.textContent = message;
+      else toast.textContent = message;
+      toast.dataset.kind = kind;
+      toast.hidden = false;
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 2400);
     }
+
     function openNote(lore) {
       noteOpen = true;
-      const title = lore && lore.title ? lore.title : 'Записка';
-      const text = lore && lore.text ? lore.text : 'Текст потерян. Гул лампы отвечает не сразу.';
-      const nt = $('note-title'), nx = $('note-text');
-      if (nt) nt.textContent = title;
-      if (nx) nx.textContent = text;
+      const title = lore?.title || 'Записка';
+      const text = lore?.text || 'Текст потерян. Гул лампы отвечает не сразу.';
+      const titleNode = $('note-title'), textNode = $('note-text');
+      if (titleNode) titleNode.textContent = title;
+      if (textNode) textNode.textContent = text;
       showOverlay('note', true);
+      document.body.classList.add('ui-open');
       game.pause();
     }
     function closeNote() {
@@ -135,83 +184,158 @@ async function main() {
       showOverlay('note', false);
       if (game.paused) game.resume();
     }
-    $('pause-resume').addEventListener('click', () => { vibrate(save); enterFullscreen(document); showOverlay('settings', false); game.resume(); });
-    $('pause-settings').addEventListener('click', () => { vibrate(save); showOverlay('pause', false); showOverlay('settings', true); });
-    $('settings-close').addEventListener('click', () => { vibrate(save); showOverlay('settings', false); showOverlay('pause', true); });
-    $('pause-fullscreen').addEventListener('click', () => { vibrate(save); enterFullscreen(document); });
-    $('pause-btn').addEventListener('click', () => { vibrate(save); game.pause(); });
-    $('prompt').addEventListener('click', () => { vibrate(save); const ok = game.interact(); if (!ok) showToast('Ничего рядом'); });
-    $('note-close').addEventListener('click', () => { vibrate(save); closeNote(); });
-    const sprintBtn = $('sprint-btn');
-    let sprintOn = false;
+    function closeSettings() {
+      showOverlay('settings', false);
+      showOverlay('pause', true);
+    }
+    function applySound() {
+      audio.setVolume(readSettings(save).sound === false ? 0 : 0.35);
+    }
+
+    bindPointerDown($('pause-resume'), () => {
+      vibrate(save);
+      enterFullscreen(document);
+      showOverlay('settings', false);
+      game.resume();
+    });
+    bindPointerDown($('pause-settings'), () => {
+      vibrate(save);
+      showOverlay('pause', false);
+      showOverlay('settings', true);
+    });
+    bindPointerDown($('settings-close'), () => { vibrate(save); closeSettings(); });
+    bindPointerDown($('pause-fullscreen'), () => { vibrate(save); enterFullscreen(document); });
+    bindPointerDown($('pause-btn'), () => { vibrate(save); game.pause(); });
+    bindPointerDown($('prompt'), () => {
+      vibrate(save);
+      if (!game.interact()) showToast('Рядом ничего нет');
+    });
+    bindPointerDown($('note-close'), () => { vibrate(save); closeNote(); });
+
+    const sprintButton = $('sprint-btn');
     game.events.on('sprint', ({ on }) => {
       sprintOn = !!on;
-      if (sprintBtn) { sprintBtn.classList.toggle('active', sprintOn); sprintBtn.textContent = sprintOn ? 'STOP' : 'RUN'; }
+      sprintButton?.classList.toggle('active', sprintOn);
+      const label = $('sprint-label');
+      if (label) label.textContent = sprintOn ? 'STOP' : 'RUN';
+      sprintButton?.setAttribute('aria-pressed', String(sprintOn));
     });
-    if (sprintBtn) sprintBtn.addEventListener('click', () => { vibrate(save); game.setSprint(!sprintOn); });
-    const range = $('sens-range'), val = $('sens-val');
-    const sens = Math.min(10, Math.max(1, Number(save.settings().sens) || 1));
-    if (range) {
-      range.min = '1'; range.max = '10'; range.step = '0.1';
-      range.value = String(sens);
-      if (val) val.textContent = sens.toFixed(2);
+    bindPointerDown(sprintButton, () => { vibrate(save); game.setSprint(!sprintOn); });
+
+    const sensitivity = $('sens-range'), sensitivityValue = $('sens-val');
+    const currentSensitivity = Math.min(10, Math.max(1, Number(readSettings(save).sens) || 1));
+    if (sensitivity) {
+      sensitivity.min = '1';
+      sensitivity.max = '10';
+      sensitivity.step = '0.1';
+      sensitivity.value = String(currentSensitivity);
+      if (sensitivityValue) sensitivityValue.textContent = currentSensitivity.toFixed(1);
+      sensitivity.addEventListener('input', () => {
+        const value = Math.min(10, Math.max(1, Number(sensitivity.value) || 1));
+        if (sensitivityValue) sensitivityValue.textContent = value.toFixed(1);
+        save.setSettings({ sens: value, sensV2: true });
+      });
     }
-    if (range) range.addEventListener('input', () => {
-      const v = Math.min(10, Math.max(1, Number(range.value)));
-      if (val) val.textContent = v.toFixed(2);
-      save.setSettings({ sens: v, sensV2: true });
+
+    const qualitySelect = $('quality-select'), qualityValue = $('quality-val'), adaptiveCheck = $('adaptive-check');
+    const quality = readSettings(save).quality || 'medium';
+    if (qualitySelect) qualitySelect.value = quality;
+    if (qualityValue) qualityValue.textContent = quality;
+    if (adaptiveCheck) adaptiveCheck.checked = readSettings(save).adaptive !== false;
+    qualitySelect?.addEventListener('change', () => {
+      const value = qualitySelect.value;
+      if (qualityValue) qualityValue.textContent = value;
+      save.setSettings({ quality: value });
+      render.setQuality(value);
+      showToast('Качество графики: ' + value, 'system');
     });
-    const qsel = $('quality-select'), qval = $('quality-val'), ach = $('adaptive-check');
-    const q0 = save.settings().quality || 'medium';
-    if (qsel) { qsel.value = q0; if (qval) qval.textContent = q0; }
-    if (ach) ach.checked = save.settings().adaptive !== false;
-    if (qsel) qsel.addEventListener('change', () => { const q = qsel.value; if (qval) qval.textContent = q; save.setSettings({ quality: q }); render.setQuality(q); showToast('Качество: ' + q); });
-    if (ach) ach.addEventListener('change', () => { save.setSettings({ adaptive: ach.checked }); render.setAdaptive(ach.checked); });
-    render.onAdaptive = m => showToast(m);
-    $('death-retry').addEventListener('click', () => { game.loadLevel(level); game.start(); showOverlay('death', false); });
-    $('win-next').addEventListener('click', () => {
-      const next = game.config && game.config.story && game.config.story.next;
-      const nextLevel = next && byId[next];
-      if (nextLevel) { showOverlay('win', false); game.loadLevel(nextLevel); game.start(); }
-      else location.href = './index.html';
+    adaptiveCheck?.addEventListener('change', () => {
+      save.setSettings({ adaptive: adaptiveCheck.checked });
+      render.setAdaptive(adaptiveCheck.checked);
+    });
+    const soundCheck = $('game-sound-check'), vibrationCheck = $('game-vibration-check');
+    if (soundCheck) soundCheck.checked = readSettings(save).sound !== false;
+    if (vibrationCheck) vibrationCheck.checked = readSettings(save).vibration !== false;
+    soundCheck?.addEventListener('change', () => { save.setSettings({ sound: soundCheck.checked }); applySound(); });
+    vibrationCheck?.addEventListener('change', () => save.setSettings({ vibration: vibrationCheck.checked }));
+    render.onAdaptive = message => showToast(message, 'system');
+
+    bindPointerDown($('death-retry'), () => {
+      game.loadLevel(level);
+      game.start();
+      showOverlay('death', false);
+    });
+    bindPointerDown($('win-next'), () => {
+      const nextId = game.config?.story?.next;
+      const nextLevel = nextId && byId[nextId];
+      if (nextLevel) {
+        showOverlay('win', false);
+        game.loadLevel(nextLevel);
+        game.start();
+      } else location.href = './index.html';
     });
     homeButton(document);
+
     setupTouch(canvas, game.input);
-    canvas.addEventListener('pointerdown', e => {
-      if (e.pointerType === 'mouse' && document.pointerLockElement !== canvas) {
-        try { const p = canvas.requestPointerLock(); if (p && typeof p.catch === 'function') p.catch(() => {}); } catch (err) {}
+    canvas.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'mouse' && document.pointerLockElement !== canvas) {
+        try { const result = canvas.requestPointerLock(); result?.catch?.(() => {}); } catch {}
       }
     });
-    canvas.addEventListener('pointermove', e => {
-      if (e.pointerType === 'mouse' && document.pointerLockElement === canvas) game.input.addLook(e.movementX, e.movementY);
+    canvas.addEventListener('pointermove', event => {
+      if (event.pointerType === 'mouse' && document.pointerLockElement === canvas) game.input.addLook(event.movementX, event.movementY);
     });
-    window.addEventListener('keydown', e => {
-      if (e.code === 'Escape') { if (noteOpen) closeNote(); else if (game.paused) game.resume(); else game.pause(); }
-      game.input.setKey(e.code, true, e.repeat);
+    window.addEventListener('keydown', event => {
+      if (event.code === 'Escape') {
+        if (noteOpen) closeNote();
+        else if (game.paused) game.resume();
+        else game.pause();
+      }
+      game.input.setKey(event.code, true, event.repeat);
     });
-    window.addEventListener('keyup', e => game.input.setKey(e.code, false));
-    game.events.on('level-loaded', ({ config }) => { audio.startAmbient(config && config.ambient); hud.setStats(game.state()); });
+    window.addEventListener('keyup', event => game.input.setKey(event.code, false));
+
+    game.events.on('level-loaded', ({ config }) => {
+      audio.startAmbient(config?.ambient);
+      hud.setStats(game.state());
+    });
     game.events.on('pause', () => audio.stopAmbient());
-    game.events.on('resume', () => audio.startAmbient(game.config && game.config.ambient));
+    game.events.on('resume', () => audio.startAmbient(game.config?.ambient));
+    game.events.on('interact', () => audio.click());
     game.events.on('step', ({ surface }) => audio.step(surface));
-    game.events.on('item-taken', ({ item, add }) => { audio.take(); showToast(add > 1 ? 'Вода +' + add : 'Предмет взят'); });
-    game.events.on('note-taken', ({ lore }) => { audio.note(); openNote(lore); });
-    game.events.on('door-open', () => { audio.door(); showToast('Дверь открыта'); });
-    game.events.on('noclip-open', () => { audio.noclip(); showToast('Проход открыт'); });
+    game.events.on('item-taken', ({ add }) => { audio.take(); showToast(add > 1 ? 'Вода: +' + add : 'Предмет добавлен', 'pickup'); });
+    game.events.on('note-taken', ({ lore }) => { audio.note(); showToast('Записка найдена', 'paper'); openNote(lore); });
+    game.events.on('door-open', () => { audio.door(); showToast('Дверь открыта', 'door'); });
+    game.events.on('noclip-open', () => { audio.noclip(); showToast('Проход открыт', 'door'); });
     game.events.on('win', () => { audio.stopAmbient(); audio.win(); });
     game.events.on('die', () => { audio.stopAmbient(); audio.die(); });
+
     gestureUnlock(window, () => {
       audio.unlock();
-      audio.setVolume(save.settings().sound === false ? 0 : 0.35);
+      applySound();
       enterFullscreen(document);
       document.body.classList.remove('ui-open');
       const hint = $('touch-hint');
-      if (hint && isTouchDevice()) { hint.hidden = false; setTimeout(() => { hint.hidden = true; }, 6000); }
+      if (hint && isTouchDevice()) {
+        hint.hidden = false;
+        setTimeout(() => { hint.hidden = true; }, 6000);
+      }
       game.loadLevel(level);
       game.start();
     });
+
     initSwUpdate(window, document, 'update-toast');
+    window.addEventListener('pagehide', () => {
+      game.manualWorld()?.dispose?.();
+      audio.dispose?.();
+      render.dispose?.();
+      touchPointers.clear();
+      pressedControls.clear();
+    }, { once: true });
     window.__BR_GAME__ = game;
-  } catch (e) { fatal(document, e); }
+  } catch (error) {
+    fatal(document, error);
+  }
 }
+
 main();
