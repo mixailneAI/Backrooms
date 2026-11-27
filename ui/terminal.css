@@ -116,3 +116,17 @@ body { max-width: none; }
 body.in-panel .info, body.in-panel .bottom, body.in-panel .top { display: none !important; }
 .panel { background: rgba(4,6,9,.97); }
 .panel-head h2 { font-size: 20px; }
+:root { --bg:#0b0803; --panel:rgba(16,12,4,.82); --line:#3a2f14; --ink:#e8d27a; --dim:#9a8a5a; --hot:#ffcf4a; --amber:#e8d27a; --bad:#ff6a4a; }
+#bg3d { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -2; }
+.bg-img { z-index: -3; }
+.wall { position: absolute; top: 0; bottom: 0; width: 34%; background: repeating-linear-gradient(90deg, rgba(0,0,0,.22) 0 2px, transparent 2px 70px), linear-gradient(#241c08, #171204); }
+.wall.wl { left: 0; transform: perspective(700px) rotateY(38deg); transform-origin: 0 50%; }
+.wall.wr { right: 0; transform: perspective(700px) rotateY(-38deg); transform-origin: 100% 50%; }
+.rotate-gate { position: fixed; inset: 0; z-index: 60; background: #0b0803; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+.rotate-gate[hidden] { display: none !important; }
+.rg-box svg { width: 84px; height: 84px; color: var(--hot); animation: rg 1.6s ease-in-out infinite; }
+@keyframes rg { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
+.rg-box h2 { color: var(--hot); letter-spacing: .2em; margin: 14px 0 6px; }
+.rg-box p { color: var(--dim); font-size: 13px; }
+.menu-btn svg { width: 22px; height: 22px; flex: 0 0 22px; }
+.logo { color: var(--hot); }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#05070a">
+<meta name="theme-color" content="#0b0803">
 <title>BACKROOMS — терминал</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./assets/icon-192.png" type="image/png">
@@ -11,17 +11,19 @@
 <link rel="stylesheet" href="./ui/terminal.css">
 </head>
 <body>
-<div id="bg" class="bg-img"><i class="lamps"></i><i class="exit-glow"></i></div>
+<canvas id="bg3d"></canvas>
+<div id="bg" class="bg-img"><i class="wall wl"></i><i class="wall wr"></i><i class="lamps"></i><i class="exit-glow"></i></div>
 <div class="veil"></div>
 <div class="scan"></div>
+<div id="rotate-gate" class="rotate-gate"><div class="rg-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M3 12a9 9 0 0 1 3-6.7M21 12a9 9 0 0 0-3 6.7"/><path d="M6 3v3H3M18 21v-3h3"/></svg><h2>ПОВЕРНИ ЭКРАН</h2><p>Комплекс работает в горизонтальном режиме</p></div></div>
 <header class="top">
-  <div class="brand-wrap"><span class="logo">◉</span><div class="brand-col"><span class="brand">BACKROOMS</span><span class="sub">ЛИМИНАЛЬНЫЙ КОМПЛЕКС</span></div></div>
+  <div class="brand-wrap"><svg class="logo" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 5v10l-8 5-8-5V7z"/><circle cx="12" cy="12" r="3"/></svg><div class="brand-col"><span class="brand">BACKROOMS</span><span class="sub">АВТОНОМНЫЙ СЕКТОР · ОНЛАЙН</span></div></div>
   <span class="count">уровней: <b id="level-count">0</b></span>
 </header>
 <main id="menu" class="menu">
-  <button id="play-btn" class="menu-btn primary" type="button"><span class="ico">▶</span>ИГРАТЬ</button>
-  <button id="settings-btn" class="menu-btn" type="button"><span class="ico">⚙</span>НАСТРОЙКИ</button>
-  <button id="exit-btn" class="menu-btn" type="button"><span class="ico">⏻</span>ВЫХОД</button>
+  <button id="play-btn" class="menu-btn primary" type="button"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>ИГРАТЬ</button>
+  <button id="settings-btn" class="menu-btn" type="button"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm9 4l-2.2-.6-.5-1.2 1.2-1.9-1.8-1.8-1.9 1.2-1.2-.5L14 5h-4l-.6 2.2-1.2.5-1.9-1.2-1.8 1.8 1.2 1.9-.5 1.2L3 12l2.2.6.5 1.2-1.2 1.9 1.8 1.8 1.9-1.2 1.2.5L10 19h4l.6-2.2 1.2-.5 1.9 1.2 1.8-1.8-1.2-1.9.5-1.2z"/></svg>НАСТРОЙКИ</button>
+  <button id="exit-btn" class="menu-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h9"/></svg>ВЫХОД</button>
 </main>
 <aside class="info">
   <h2>КОМПЛЕКС «ЗАКУЛИСЬЕ»</h2>
@@ -40,12 +42,7 @@
 <section id="level-panel" class="panel" hidden>
   <div class="panel-head"><h2>ВЫБОР УРОВНЯ</h2><button id="level-back" class="holo-btn small" type="button">НАЗАД</button></div>
   <main id="level-grid" class="grid"></main>
-  <section id="abyss-card" class="card abyss">
-    <span class="card-num">∞</span><h3>Бездна</h3>
-    <span class="card-danger">класс ∞</span>
-    <p class="card-tags">бесконечность, стихии глубины, без финала</p>
-    <span class="card-state">вход из терминала</span>
-  </section>
+  <section id="abyss-card" class="card abyss"><span class="card-num">∞</span><h3>Бездна</h3><span class="card-danger">класс ∞</span><p class="card-tags">бесконечность, стихии глубины, без финала</p><span class="card-state">вход из терминала</span></section>
   <button id="enter-btn" class="holo-btn primary" type="button">ВЫБЕРИ УРОВЕНЬ</button>
 </section>
 <section id="settings-panel" class="panel" hidden>

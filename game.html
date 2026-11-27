@@ -9,82 +9,24 @@
 <link rel="stylesheet" href="./ui/game.css">
 </head>
 <body>
-<div id="fatal" class="overlay fatal" hidden>
-  <div class="box">
-    <h2>Фатальная ошибка</h2>
-    <pre id="fatal-stack"></pre>
-    <button id="fatal-home" class="btn" type="button">В терминал</button>
-  </div>
-</div>
-<div id="pause" class="overlay" hidden>
-  <div class="box">
-    <h2>Пауза</h2>
-    <button id="pause-resume" class="btn primary" type="button">Продолжить</button>
-    <button id="pause-settings" class="btn" type="button">Настройки</button>
-    <button id="pause-fullscreen" class="btn" type="button">На весь экран</button>
-    <button id="pause-home" class="btn" type="button">В терминал</button>
-  </div>
-</div>
-<div id="settings" class="overlay" hidden>
-  <div class="box">
-    <h2>Настройки</h2>
-    <label class="row"><span>Чувствительность</span><output id="sens-val">1.00</output></label>
-    <input id="sens-range" class="range" type="range" min="1" max="10" step="0.1" value="1">
-    <label class="row"><span>Качество</span><output id="quality-val">medium</output></label>
-    <select id="quality-select" class="select"><option value="low">low</option><option value="medium" selected>medium</option><option value="high">high</option></select>
-    <label class="row"><span>Адаптивный FPS</span><input id="adaptive-check" type="checkbox" checked></label>
-    <button id="settings-close" class="btn primary" type="button">Готово</button>
-  </div>
-</div>
-<div id="death" class="overlay" hidden>
-  <div class="box">
-    <h2>Ты умер</h2>
-    <p id="death-cause"></p>
-    <button id="death-retry" class="btn primary" type="button">Ещё раз</button>
-    <button id="death-home" class="btn" type="button">В терминал</button>
-  </div>
-</div>
-<div id="win" class="overlay" hidden>
-  <div class="box">
-    <h2>Уровень пройден</h2>
-    <button id="win-next" class="btn primary" type="button">Дальше</button>
-    <button id="win-home" class="btn" type="button">В терминал</button>
-  </div>
-</div>
-<div id="note" class="overlay" hidden>
-  <div class="box note-box">
-    <h2 id="note-title">Записка</h2>
-    <p id="note-text"></p>
-    <button id="note-close" class="btn primary" type="button">Закрыть</button>
-  </div>
-</div>
+<div id="fatal" class="overlay fatal" hidden><div class="box"><h2>Фатальная ошибка</h2><pre id="fatal-stack"></pre><button id="fatal-home" class="btn" type="button">В терминал</button></div></div>
+<div id="pause" class="overlay" hidden><div class="box"><h2>Пауза</h2><button id="pause-resume" class="btn primary" type="button">Продолжить</button><button id="pause-settings" class="btn" type="button">Настройки</button><button id="pause-fullscreen" class="btn" type="button">На весь экран</button><button id="pause-home" class="btn" type="button">В терминал</button></div></div>
+<div id="settings" class="overlay" hidden><div class="box"><h2>Настройки</h2><label class="row"><span>Чувствительность</span><output id="sens-val">1.00</output></label><input id="sens-range" class="range" type="range" min="1" max="10" step="0.1" value="1"><label class="row"><span>Качество</span><output id="quality-val">medium</output></label><select id="quality-select" class="select"><option value="low">low</option><option value="medium" selected>medium</option><option value="high">high</option></select><label class="row"><span>Адаптивный FPS</span><input id="adaptive-check" type="checkbox" checked></label><button id="settings-close" class="btn primary" type="button">Готово</button></div></div>
+<div id="death" class="overlay" hidden><div class="box"><h2>Ты умер</h2><p id="death-cause"></p><button id="death-retry" class="btn primary" type="button">Ещё раз</button><button id="death-home" class="btn" type="button">В терминал</button></div></div>
+<div id="win" class="overlay" hidden><div class="box"><h2>Уровень пройден</h2><button id="win-next" class="btn primary" type="button">Дальше</button><button id="win-home" class="btn" type="button">В терминал</button></div></div>
+<div id="note" class="overlay" hidden><div class="box note-box"><h2 id="note-title">Записка</h2><p id="note-text"></p><button id="note-close" class="btn primary" type="button">Закрыть</button></div></div>
 <canvas id="game" touch-action="none"></canvas>
 <div id="fx" class="fx" aria-hidden="true"></div>
 <aside id="side">
   <div class="side-head">СТАТУС</div>
-  <div class="bar">
-    <span class="bar-label">Рассудок</span>
-    <div class="track"><i id="bar-sanity"></i></div>
-    <output id="val-sanity">100%</output>
-  </div>
-  <div class="bar">
-    <span class="bar-label">Выносливость</span>
-    <div class="track"><i id="bar-stamina"></i></div>
-    <output id="val-stamina">100%</output>
-  </div>
+  <div class="bar"><span class="bar-label">Рассудок</span><div class="track"><i id="bar-sanity"></i></div><output id="val-sanity">100%</output></div>
+  <div class="bar"><span class="bar-label">Выносливость</span><div class="track"><i id="bar-stamina"></i></div><output id="val-stamina">100%</output></div>
   <div class="inv-head">ИНВЕНТАРЬ</div>
-  <div class="inv">
-    <div class="slot"><b id="inv-water">0</b><span>вода</span></div>
-    <div class="slot"><b id="inv-notes">0</b><span>записки</span></div>
-  </div>
+  <div class="inv"><div class="slot"><b id="inv-water">0</b><span>вода</span></div><div class="slot"><b id="inv-notes">0</b><span>записки</span></div></div>
 </aside>
-<div id="hud">
-  <div class="stat"><span class="k">Уровень</span><span id="hud-level">—</span></div>
-  <div class="stat"><span class="k">Время</span><span id="hud-time">00:00</span></div>
-  <div class="stat"><span class="k">Рядом</span><span id="hud-prompt">—</span></div>
-</div>
-<button id="pause-btn" class="icon-btn touch-only" type="button" aria-label="Пауза">II</button>
-<button id="sprint-btn" class="round-btn touch-only" type="button" aria-label="Бег">RUN</button>
+<div id="hud"><div class="stat"><span class="k">Уровень</span><span id="hud-level">—</span></div><div class="stat"><span class="k">Время</span><span id="hud-time">00:00</span></div><div class="stat"><span class="k">Рядом</span><span id="hud-prompt">—</span></div></div>
+<button id="pause-btn" class="icon-btn touch-only" type="button" aria-label="Пауза"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
+<button id="sprint-btn" class="round-btn touch-only" type="button" aria-label="Бег"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M4 5l7 7-7 7V5zm9 0l7 7-7 7V5z"/></svg><span id="sprint-label">RUN</span></button>
 <button id="prompt" class="round-btn prompt touch-only" type="button" hidden>E</button>
 <p id="touch-hint" class="hint touch-only" hidden>Левая половина — ходьба, правая — обзор</p>
 <div id="joystick" class="joy touch-only" hidden><div id="joy-knob" class="joy-knob"></div></div>

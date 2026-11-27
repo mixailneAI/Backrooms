@@ -22,45 +22,35 @@ export function makeTexture(THREE, type, palette = {}) {
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, size, size);
   if (type === 'wall') {
-    grad(ctx, size, light, dark);
-    const band = 128;
-    for (let x = 0; x < size; x += band) {
-      ctx.fillStyle = dark;
-      ctx.globalAlpha = 0.18;
-      ctx.fillRect(x, 0, 4, size);
-      ctx.fillStyle = light;
-      ctx.globalAlpha = 0.12;
-      ctx.fillRect(x + band - 4, 0, 4, size);
-      ctx.fillStyle = dark;
-      ctx.globalAlpha = 0.20;
-      for (let y = 24; y < size; y += 96) {
-        ctx.beginPath();
-        ctx.moveTo(x + 24, y + 34);
-        ctx.lineTo(x + band / 2, y + 4);
-        ctx.lineTo(x + band - 24, y + 34);
-        ctx.lineTo(x + band / 2, y + 20);
-        ctx.closePath();
-        ctx.fill();
-      }
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, size, size);
+    for (let x = 0; x < size; x += 64) {
+      ctx.fillStyle = light; ctx.globalAlpha = 0.05; ctx.fillRect(x, 0, 22, size);
+      ctx.fillStyle = dark; ctx.globalAlpha = 0.06; ctx.fillRect(x + 40, 0, 3, size);
     }
-    for (let i = 0; i < 1800; i++) {
-      ctx.fillStyle = r.chance(0.5) ? dark : light;
-      ctx.globalAlpha = 0.04 + r.int(16) / 100;
-      ctx.fillRect(r.int(size), r.int(size), 8 + r.int(42), 8 + r.int(42));
+    ctx.globalAlpha = 0.10; ctx.fillStyle = dark;
+    ctx.fillRect(0, 0, size, 3); ctx.fillRect(0, size / 2, size, 3);
+    for (let i = 0; i < 260; i++) {
+      ctx.fillStyle = r.chance(0.6) ? dark : light;
+      ctx.globalAlpha = 0.03 + r.int(7) / 100;
+      const m = 64;
+      ctx.fillRect(m + r.int(size - m * 2), m + r.int(size - m * 2), 14 + r.int(60), 10 + r.int(46));
     }
     ctx.globalAlpha = 1;
   }
   if (type === 'carpet') {
-    grad(ctx, size, light, dark);
-    for (let i = 0; i < 4200; i++) {
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, size, size);
+    for (let i = 0; i < 9000; i++) {
       ctx.fillStyle = r.chance(0.5) ? dark : light;
-      ctx.globalAlpha = 0.16 + r.int(34) / 100;
-      ctx.fillRect(r.int(size), r.int(size), 4, 4);
+      ctx.globalAlpha = 0.05 + r.int(12) / 100;
+      ctx.fillRect(r.int(size), r.int(size), 2, 2);
     }
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 26; i++) {
       ctx.fillStyle = dark;
-      ctx.globalAlpha = 0.05 + r.int(10) / 100;
-      ctx.fillRect(r.int(size), r.int(size), 30 + r.int(90), 20 + r.int(70));
+      ctx.globalAlpha = 0.04 + r.int(6) / 100;
+      const m = 90;
+      ctx.fillRect(m + r.int(size - m * 2), m + r.int(size - m * 2), 40 + r.int(110), 30 + r.int(80));
     }
     ctx.globalAlpha = 1;
   }
