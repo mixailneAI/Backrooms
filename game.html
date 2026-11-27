@@ -29,7 +29,10 @@
   <div class="box">
     <h2>Настройки</h2>
     <label class="row"><span>Чувствительность</span><output id="sens-val">1.00</output></label>
-    <input id="sens-range" class="range" type="range" min="0.3" max="3" step="0.05" value="1">
+    <input id="sens-range" class="range" type="range" min="1" max="10" step="0.1" value="1">
+    <label class="row"><span>Качество</span><output id="quality-val">medium</output></label>
+    <select id="quality-select" class="select"><option value="low">low</option><option value="medium" selected>medium</option><option value="high">high</option></select>
+    <label class="row"><span>Адаптивный FPS</span><input id="adaptive-check" type="checkbox" checked></label>
     <button id="settings-close" class="btn primary" type="button">Готово</button>
   </div>
 </div>

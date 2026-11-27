@@ -8,7 +8,7 @@ import { initSwUpdate } from './sw-update.js';
 import { levels, byId } from '../levels/all.js';
 const $ = id => document.getElementById(id);
 const JOY_RADIUS = 58;
-const LOOK_SCALE = 0.55;
+const LOOK_SCALE = 1.0;
 const touchPointers = new Map();
 function isTouchDevice() { return 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0; }
 function vibrate(save) { try { if (save.settings().vibration && navigator.vibrate) navigator.vibrate(15); } catch (e) {} }
@@ -89,8 +89,9 @@ async function main() {
     if (!level) { fatal(document, new Error('уровень не найден: ' + levelId)); return; }
     const THREE = await import('../vendor/three.module.js');
     const canvas = $('game');
-    const render = createRender(THREE, canvas);
+    const render = createRender(THREE, canvas, { quality: save.settings().quality || 'medium', adaptive: save.settings().adaptive !== false });
     const save = createSave();
+    if (!save.settings().sensV2) save.setSettings({ sens: 1, sensV2: true });
     const hud = createHud(document);
     const audio = createAudio();
     let noteOpen = false;
@@ -154,16 +155,24 @@ async function main() {
     }
     window.addEventListener('pointerup', () => { if (sprintHeld) setSprintHeld(false); });
     const range = $('sens-range'), val = $('sens-val');
-    const sens = Number((save.settings().sens) || 1);
+    const sens = Math.min(10, Math.max(1, Number(save.settings().sens) || 1));
     if (range) {
-      range.value = String(Math.min(3, Math.max(0.3, sens)));
-      if (val) val.textContent = Number(range.value).toFixed(2);
+      range.min = '1'; range.max = '10'; range.step = '0.1';
+      range.value = String(sens);
+      if (val) val.textContent = sens.toFixed(2);
     }
     if (range) range.addEventListener('input', () => {
-      const v = Math.min(3, Math.max(0.3, Number(range.value)));
+      const v = Math.min(10, Math.max(1, Number(range.value)));
       if (val) val.textContent = v.toFixed(2);
-      save.setSettings({ sens: v });
+      save.setSettings({ sens: v, sensV2: true });
     });
+    const qsel = $('quality-select'), qval = $('quality-val'), ach = $('adaptive-check');
+    const q0 = save.settings().quality || 'medium';
+    if (qsel) { qsel.value = q0; if (qval) qval.textContent = q0; }
+    if (ach) ach.checked = save.settings().adaptive !== false;
+    if (qsel) qsel.addEventListener('change', () => { const q = qsel.value; if (qval) qval.textContent = q; save.setSettings({ quality: q }); render.setQuality(q); showToast('Качество: ' + q); });
+    if (ach) ach.addEventListener('change', () => { save.setSettings({ adaptive: ach.checked }); render.setAdaptive(ach.checked); });
+    render.onAdaptive = m => showToast(m);
     $('death-retry').addEventListener('click', () => { game.loadLevel(level); game.start(); showOverlay('death', false); });
     $('win-next').addEventListener('click', () => {
       const next = game.config && game.config.story && game.config.story.next;

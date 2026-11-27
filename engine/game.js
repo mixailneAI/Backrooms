@@ -96,8 +96,9 @@ export function createGame(ctx) {
     const look = input.consumeLook();
     if (look.x || look.y) {
       const raw = Number((save && save.settings().sens) || 1);
-      const eff = raw <= 1 ? raw : 1 + Math.log(raw) * 0.55;
-      camera.addLook(look.x, look.y, eff * 0.00135);
+      const sens = Math.min(10, Math.max(1, raw));
+      const mult = 0.0066 * Math.sqrt(sens);
+      camera.addLook(look.x, look.y, mult);
     }
   }
   function tick(dt) {
