@@ -130,3 +130,6 @@ body.in-panel .info, body.in-panel .bottom, body.in-panel .top { display: none !
 .rg-box p { color: var(--dim); font-size: 13px; }
 .menu-btn svg { width: 22px; height: 22px; flex: 0 0 22px; }
 .logo { color: var(--hot); }
+.rg-box svg { animation: none; width: 72px; height: 72px; }
+.rg-box .holo-btn { margin-top: 18px; }
+.rotate-gate { background: rgba(11,8,3,.97); }
