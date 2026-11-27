@@ -23,6 +23,7 @@ function enterFullscreen(doc) {
     } catch (e) {
       try { req.call(el); } catch (e2) {}
     }
+    try { if (globalThis.screen && screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e2) {}
   } catch (e) {}
 }
 function setJoyOrigin(x, y) {

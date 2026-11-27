@@ -41,6 +41,7 @@ function startBackground(win, doc) {
   })).catch(() => {});
 }
 export function initTerminal(doc = document, win = globalThis, opts = {}) {
+  try { if (doc.fullscreenElement && doc.exitFullscreen) { const p = doc.exitFullscreen(); if (p && p.catch) p.catch(() => {}); } } catch (e) {}
   const levels = opts.levels ?? registryLevels;
   const save = opts.save ?? createSave();
   const progress = save.progress();
@@ -59,7 +60,7 @@ export function initTerminal(doc = document, win = globalThis, opts = {}) {
     const sel = levels.find(l => l.id === selectedId);
     if (!levels.length) { enter.textContent = 'НЕТ УРОВНЕЙ'; enter.disabled = true; return; }
     enter.disabled = !sel;
-    enter.textContent = sel ? 'ИГРАТЬ: ' + (sel.name || sel.id) : 'ВЫБЕРИ УРОВЕНЬ';
+    enter.textContent = sel ? 'НАЧАТЬ: ' + (sel.name || sel.id) : 'ВЫБЕРИ УРОВЕНЬ';
   }
   for (const l of levels) {
     const locked = !unlocked(l.id) && l.number !== 0;
@@ -82,11 +83,12 @@ export function initTerminal(doc = document, win = globalThis, opts = {}) {
   refreshEnter();
   const show = (id, on) => { const el = $(doc, id); if (el) el.hidden = !on; };
   const playBtn = $(doc, 'play-btn'), setBtn = $(doc, 'settings-btn');
-  if (playBtn) playBtn.addEventListener('click', () => { show('level-panel', true); show('menu', false); });
-  if (setBtn) setBtn.addEventListener('click', () => { show('settings-panel', true); show('menu', false); });
+  const inPanel = on => { if (doc.body && doc.body.classList) doc.body.classList.toggle('in-panel', on); };
+  if (playBtn) playBtn.addEventListener('click', () => { show('level-panel', true); show('menu', false); inPanel(true); });
+  if (setBtn) setBtn.addEventListener('click', () => { show('settings-panel', true); show('menu', false); inPanel(true); });
   const b1 = $(doc, 'level-back'), b2 = $(doc, 'settings-back');
-  if (b1) b1.addEventListener('click', () => { show('level-panel', false); show('menu', true); });
-  if (b2) b2.addEventListener('click', () => { show('settings-panel', false); show('menu', true); });
+  if (b1) b1.addEventListener('click', () => { show('level-panel', false); show('menu', true); inPanel(false); });
+  if (b2) b2.addEventListener('click', () => { show('settings-panel', false); show('menu', true); inPanel(false); });
   const range = $(doc, 'sens-range'), sval = $(doc, 'sens-val');
   const s0 = (save.settings && save.settings()) || {};
   const sens = Math.min(10, Math.max(1, Number(s0.sens) || 1));
@@ -109,6 +111,15 @@ export function initTerminal(doc = document, win = globalThis, opts = {}) {
   const exitBtn = $(doc, 'exit-btn');
   if (exitBtn) exitBtn.addEventListener('click', () => { try { win.close(); } catch (e) {} const t = $(doc, 'update-toast'); if (t) { t.textContent = 'Закрой вкладку браузера, чтобы выйти'; t.hidden = false; } });
   initSwUpdate(win, doc, 'update-toast');
+  const goWide = () => {
+    try {
+      const el = doc.documentElement;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (req) { const p = req.call(el); if (p && p.catch) p.catch(() => {}); }
+    } catch (e) {}
+    try { if (win.screen && win.screen.orientation && win.screen.orientation.lock) win.screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
+  };
+  win.addEventListener('pointerdown', goWide, { once: true });
   startBackground(win, doc);
   return { levels, save };
 }

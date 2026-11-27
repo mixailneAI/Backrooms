@@ -1,4 +1,4 @@
-const CACHE = "br-790a9dba1f";
+const CACHE = "br-9817b85420";
 const PRECACHE = ["./","./index.html","./manifest.webmanifest","./core/colors.js","./core/events.js","./core/math.js","./core/prng.js","./core/storage.js","./core/time.js","./engine/audio.js","./engine/boot.js","./engine/camera.js","./engine/game.js","./engine/hud.js","./engine/input.js","./engine/interact.js","./engine/loop.js","./engine/physics.js","./engine/render.js","./engine/save.js","./world/manual.js","./world/textures.js","./ui/game.css","./ui/game.js","./ui/sw-update.js","./ui/terminal.css","./ui/terminal.js","./levels/all.js","./levels/l000/build.js","./levels/l000/config.js","./sw.js","./game.html","./vendor/three.module.js","./assets/icon-192.png","./assets/icon-512.png","./assets/maskable-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.indexOf("br-") === 0 && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

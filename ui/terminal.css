@@ -1,6 +1,7 @@
 :root { --bg:#05070a; --panel:rgba(10,16,20,.78); --line:#1e3a44; --ink:#bfefff; --dim:#5f8a9a; --hot:#7fdfff; --amber:#e8d27a; --bad:#ff6a4a; }
 * { box-sizing:border-box; margin:0; padding:0; }
-html,body { background:var(--bg); color:var(--ink); }
+html { background:#05070a; }
+body { background:transparent; color:var(--ink); }
 body { font-family:"Courier New",ui-monospace,monospace; min-height:100vh; line-height:1.5; max-width:960px; margin:0 auto; padding:calc(12px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left)); position:relative; }
 #bg { position:fixed; inset:0; width:100%; height:100%; z-index:-2; filter:saturate(.85) brightness(.62); }
 .holo-grid { position:fixed; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(rgba(5,7,10,.55),rgba(5,7,10,.9)),repeating-linear-gradient(90deg,rgba(127,223,255,.07) 0 1px,transparent 1px 60px),repeating-linear-gradient(0deg,rgba(127,223,255,.07) 0 1px,transparent 1px 60px); }
@@ -112,3 +113,6 @@ body { max-width: none; }
 .panel .holo-btn.primary { position: sticky; bottom: 10px; }
 @media (max-width: 900px) { .info { display: none; } }
 @media (max-width: 720px) { .menu { left: 16px; right: 16px; width: auto; top: auto; bottom: calc(84px + env(safe-area-inset-bottom)); transform: none; } .bottom .foot { display: none; } .bottom { justify-content: center; } }
+body.in-panel .info, body.in-panel .bottom, body.in-panel .top { display: none !important; }
+.panel { background: rgba(4,6,9,.97); }
+.panel-head h2 { font-size: 20px; }
