@@ -8,6 +8,15 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./assets/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="./assets/icon-192.png">
+<style>
+html{background:#0b0803}body{margin:0;background:#0b0803;color:#e8d27a;font-family:"Courier New",ui-monospace,monospace}
+[hidden]{display:none!important}
+.menu{position:fixed;left:16px;right:16px;bottom:84px;display:flex;flex-direction:column;gap:12px;z-index:3}
+.menu-btn{display:flex;align-items:center;gap:14px;background:#14100a;color:#e8d27a;border:1px solid #3a2f14;padding:16px;font:inherit;font-size:16px;letter-spacing:.1em;min-height:56px;cursor:pointer}
+.menu-btn svg{width:22px;height:22px;flex:0 0 22px}
+.rotate-gate{position:fixed;inset:0;z-index:60;background:#0b0803;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
+.rg-box svg{width:72px;height:72px}
+</style>
 <link rel="stylesheet" href="./ui/terminal.css">
 </head>
 <body>
@@ -15,15 +24,15 @@
 <div id="bg" class="bg-img"><i class="wall wl"></i><i class="wall wr"></i><i class="lamps"></i><i class="exit-glow"></i></div>
 <div class="veil"></div>
 <div class="scan"></div>
-<div id="rotate-gate" class="rotate-gate"><div class="rg-box"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="7" width="12" height="22" rx="2.5"/><path d="M9 26c0 8 7 14 15 14"/><path d="M20 36l4 4 4-4"/></svg><h2>ПОВЕРНИ ЭКРАН</h2><p>Горизонтальный режим — полный обзор коридора</p><button id="rotate-skip" class="holo-btn small" type="button">ПРОДОЛЖИТЬ ВЕРТИКАЛЬНО</button></div></div>
+<div id="rotate-gate" class="rotate-gate"><div class="rg-box"><svg viewBox="0 0 48 48" width="72" height="72" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="7" width="12" height="22" rx="2.5"/><path d="M9 26c0 8 7 14 15 14"/><path d="M20 36l4 4 4-4"/></svg><h2>ПОВЕРНИ ЭКРАН</h2><p>Горизонтальный режим — полный обзор коридора</p><button id="rotate-skip" class="holo-btn small" type="button">ПРОДОЛЖИТЬ ВЕРТИКАЛЬНО</button></div></div>
 <header class="top">
   <div class="brand-wrap"><svg class="logo" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 5v10l-8 5-8-5V7z"/><circle cx="12" cy="12" r="3"/></svg><div class="brand-col"><span class="brand">BACKROOMS</span><span class="sub">АВТОНОМНЫЙ СЕКТОР · ОНЛАЙН</span></div></div>
   <span class="count">уровней: <b id="level-count">0</b></span>
 </header>
 <main id="menu" class="menu">
-  <button id="play-btn" class="menu-btn primary" type="button"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>ИГРАТЬ</button>
-  <button id="settings-btn" class="menu-btn" type="button"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm9 4l-2.2-.6-.5-1.2 1.2-1.9-1.8-1.8-1.9 1.2-1.2-.5L14 5h-4l-.6 2.2-1.2.5-1.9-1.2-1.8 1.8 1.2 1.9-.5 1.2L3 12l2.2.6.5 1.2-1.2 1.9 1.8 1.8 1.9-1.2 1.2.5L10 19h4l.6-2.2 1.2-.5 1.9 1.2 1.8-1.8-1.2-1.9.5-1.2z"/></svg>НАСТРОЙКИ</button>
-  <button id="exit-btn" class="menu-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h9"/></svg>ВЫХОД</button>
+  <button id="play-btn" class="menu-btn primary" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>ИГРАТЬ</button>
+  <button id="settings-btn" class="menu-btn" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm9 4l-2.2-.6-.5-1.2 1.2-1.9-1.8-1.8-1.9 1.2-1.2-.5L14 5h-4l-.6 2.2-1.2.5-1.9-1.2-1.8 1.8 1.2 1.9-.5 1.2L3 12l2.2.6.5 1.2-1.2 1.9 1.8 1.8 1.9-1.2 1.2.5L10 19h4l.6-2.2 1.2-.5 1.9 1.2 1.8-1.8-1.2-1.9.5-1.2z"/></svg>НАСТРОЙКИ</button>
+  <button id="exit-btn" class="menu-btn" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h9"/></svg>ВЫХОД</button>
 </main>
 <aside class="info">
   <h2>КОМПЛЕКС «ЗАКУЛИСЬЕ»</h2>
