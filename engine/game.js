@@ -20,6 +20,7 @@ export function createGame(ctx) {
   let disposed = false;
   let time = 0;
   let lastMoving = false;
+  let sprintHeld = false;
   let sanity = 100;
   let stamina = 100;
   let inventory = { water: 0, notes: 0 };
@@ -35,9 +36,9 @@ export function createGame(ctx) {
     return { sanity, stamina, inventory: { water: inventory.water, notes: inventory.notes } };
   }
   function setSprint(v) {
-    const on = !!v;
-    if (input.setSprint) input.setSprint(on);
-    else input.sprint = on;
+    sprintHeld = !!v;
+    if (input.setSprint) input.setSprint(sprintHeld);
+    events.emit('sprint', { on: sprintHeld });
   }
   function applyLevel(level) {
     levelId = level.id;
@@ -78,7 +79,8 @@ export function createGame(ctx) {
     lastMoving = Math.hypot(mv.x, mv.z) > 0.05;
     camera.update(dt, input, lastMoving);
     if (manualWorld && colliderAdapter) {
-      const speed = (input.sprint ? 5.2 : input.crouch ? 1.8 : 3.2) * dt;
+      const sprinting = input.sprint || sprintHeld;
+      const speed = (sprinting ? 5.2 : input.crouch ? 1.8 : 3.2) * dt;
       const yaw = camera.yaw;
       const dx = (Math.sin(yaw) * mv.z + Math.cos(yaw) * mv.x) * speed;
       const dz = (Math.cos(yaw) * mv.z - Math.sin(yaw) * mv.x) * speed;
@@ -106,10 +108,10 @@ export function createGame(ctx) {
     time += dt;
     tickPlayerState(dt);
     hud && hud.setTime(time);
-    if (input.sprint && lastMoving && stamina > 0) stamina -= 20 * dt;
+    if ((input.sprint || sprintHeld) && lastMoving && stamina > 0) stamina -= 20 * dt;
     else stamina += 12 * dt;
     stamina = Math.max(0, Math.min(100, stamina));
-    if (stamina <= 0 && input.sprint) setSprint(false);
+    if (stamina <= 0 && (input.sprint || sprintHeld)) setSprint(false);
     let drain = (config && config.sanityDrain) || 0;
     if (stamina < 25) drain *= 1.8;
     sanity -= drain * 0.12 * dt;

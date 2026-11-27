@@ -142,18 +142,12 @@ async function main() {
     $('prompt').addEventListener('click', () => { vibrate(save); const ok = game.interact(); if (!ok) showToast('Ничего рядом'); });
     $('note-close').addEventListener('click', () => { vibrate(save); closeNote(); });
     const sprintBtn = $('sprint-btn');
-    function setSprintHeld(v) {
-      sprintHeld = !!v;
-      game.setSprint(v);
-      if (sprintBtn) sprintBtn.classList.toggle('active', sprintHeld);
-    }
-    if (sprintBtn) {
-      sprintBtn.addEventListener('pointerdown', e => { e.preventDefault(); vibrate(save); setSprintHeld(true); });
-      sprintBtn.addEventListener('pointerup', () => setSprintHeld(false));
-      sprintBtn.addEventListener('pointercancel', () => setSprintHeld(false));
-      sprintBtn.addEventListener('pointerleave', () => setSprintHeld(false));
-    }
-    window.addEventListener('pointerup', () => { if (sprintHeld) setSprintHeld(false); });
+    let sprintOn = false;
+    game.events.on('sprint', ({ on }) => {
+      sprintOn = !!on;
+      if (sprintBtn) { sprintBtn.classList.toggle('active', sprintOn); sprintBtn.textContent = sprintOn ? 'STOP' : 'RUN'; }
+    });
+    if (sprintBtn) sprintBtn.addEventListener('click', () => { vibrate(save); game.setSprint(!sprintOn); });
     const range = $('sens-range'), val = $('sens-val');
     const sens = Math.min(10, Math.max(1, Number(save.settings().sens) || 1));
     if (range) {
