@@ -14,6 +14,7 @@ export function createGame(ctx) {
   const interact = createInteract();
   const events = bus();
   let manualWorld = null;
+  let chunkWorld = null;
   let colliderAdapter = null;
   let config = null;
   let levelId = null;
@@ -217,7 +218,7 @@ export function createGame(ctx) {
     resetRunState();
     clearArrowMeshes();
     if (render && render.applyFog) render.applyFog(biome);
-    if (manualWorld) { manualWorld.dispose(); manualWorld = null; colliderAdapter = null; }
+    if (chunkWorld) { chunkWorld.dispose(); chunkWorld = null; } if (manualWorld) { manualWorld.dispose(); manualWorld = null; colliderAdapter = null; }
     interact.setItems([]);
     if (level.chunked) { manualWorld = null; colliderAdapter = null; return; }
     const createManualWorld = ctx.worldModule && ctx.worldModule.createManualWorld;
@@ -238,7 +239,7 @@ export function createGame(ctx) {
     const mv = input.move;
     lastMoving = Math.hypot(mv.x, mv.z) > 0.05;
     camera.update(dt, input, lastMoving);
-    if (manualWorld && colliderAdapter) {
+    if (colliderAdapter && (manualWorld || chunkWorld)) {
       const sprinting = input.sprint || sprintHeld;
       const speed = (sprinting ? 5.2 : input.crouch ? 1.8 : 3.2) * dt;
       const yaw = camera.yaw;
@@ -289,7 +290,7 @@ export function createGame(ctx) {
       if (n) prompt = n.label || n.type;
     }
     hud && hud.setPrompt(prompt);
-    manualWorld?.update?.(time);
+    manualWorld?.update?.(time); if (chunkWorld) { const cp = camera.pos(); chunkWorld.pos.x = cp.x; chunkWorld.pos.z = cp.z; chunkWorld.stream(); }
     const actions = input.consumeActions();
     for (const a of actions) {
       if (a === 'interact') {
@@ -388,6 +389,8 @@ export function createGame(ctx) {
     get running() { return running; },
     get paused() { return paused; },
     manualWorld: () => manualWorld,
+    chunkWorld: () => chunkWorld,
+    attachChunkWorld(world) { if (chunkWorld) chunkWorld.dispose(); chunkWorld = world; colliderAdapter = { isFree: (x, z) => world.isFree(x, z) }; const sp = world.playerPos(); camera.setPos(sp.x, sp.z); lastStep.x = sp.x; lastStep.z = sp.z; },
     colliderAdapter: () => colliderAdapter,
     tickPlayerState,
     setSprint,
@@ -405,7 +408,7 @@ export function createGame(ctx) {
         levelId = level.id;
         resetRunState();
         clearArrowMeshes();
-        config = { id: level.id, seed: level.seed || 1, chunked: true, biome: level.biome || null, story: level.story || null, lore: level.lore || [], ambient: level.ambient || null, sanityDrain: level.sanityDrain || 0, stepSurface: level.stepSurface || 'carpet' };
+        if (chunkWorld) { chunkWorld.dispose(); chunkWorld = null; } config = { id: level.id, seed: level.seed || 1, chunked: true, biome: level.biome || null, story: level.story || null, lore: level.lore || [], ambient: level.ambient || null, sanityDrain: level.sanityDrain || 0, stepSurface: level.stepSurface || 'carpet' };
         manualWorld = null;
         colliderAdapter = null;
         interact.setItems([]);

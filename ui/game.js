@@ -311,8 +311,16 @@ async function main() {
     vibrationCheck?.addEventListener('change', () => save.setSettings({ vibration: vibrationCheck.checked }));
     render.onAdaptive = message => showToast(message, 'system');
 
-    bindPointerDown($('death-retry'), () => {
-      game.loadLevel(level);
+    async function loadWithWorld(lv) {
+       game.loadLevel(lv);
+       if (lv.chunked) {
+         const CW = await import('../world/chunkworld.js');
+         game.attachChunkWorld(new CW.ChunkWorld(THREE, { seed: lv.seed || 1, chunkSize: 16, viewDistance: 2, biome: lv.biome || {} }, render.scene));
+       }
+       game.start();
+     }
+     bindPointerDown($('death-retry'), () => {
+      loadWithWorld(level);
       game.start();
       showOverlay('death', false);
     });
@@ -321,7 +329,7 @@ async function main() {
       const nextLevel = nextId && byId[nextId];
       if (nextLevel) {
         showOverlay('win', false);
-        game.loadLevel(nextLevel);
+        loadWithWorld(nextLevel);
         game.start();
       } else location.href = './index.html';
     });
@@ -394,13 +402,14 @@ async function main() {
         hint.hidden = false;
         setTimeout(() => { hint.hidden = true; }, 6000);
       }
-      game.loadLevel(level);
+      loadWithWorld(level);
       game.start();
     });
 
     initSwUpdate(window, document, 'update-toast');
     window.addEventListener('pagehide', () => {
       game.manualWorld()?.dispose?.();
+      game.chunkWorld?.()?.dispose?.();
       audio.dispose?.();
       render.dispose?.();
       touchPointers.clear();
