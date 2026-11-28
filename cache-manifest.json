@@ -1,5 +1,5 @@
 {
-  "version": "ed7a899618",
+  "version": "80133999de",
   "files": [
     "./",
     "./index.html",
@@ -23,6 +23,7 @@
     "./engine/render.js",
     "./engine/save.js",
     "./world/chunkgen.js",
+    "./world/chunkworld.js",
     "./world/manual.js",
     "./world/textures.js",
     "./ui/game.css",
