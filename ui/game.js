@@ -388,7 +388,7 @@ async function main() {
       audio.unlock();
       applySound();
       enterFullscreen(document);
-      document.body.classList.remove('ui-open');
+      requestAnimationFrame(() => document.body.classList.remove('ui-open'));
       const hint = $('touch-hint');
       if (hint && isTouchDevice()) {
         hint.hidden = false;

@@ -170,7 +170,7 @@ export function createRender(THREE, canvas, opts = {}) {
   }
   buildPost();
 
-  let fps = 60, sampleSeconds = 0, frameCount = 0, lowSeconds = 0, lastSample = 0;
+  let fps = 60, sampleSeconds = 0, frameCount = 0, lowSeconds = 0, lastSample = 0, adaptiveSteps = 0;
   function notify(message) { if (api.onAdaptive) api.onAdaptive(message); }
   function rebuildAtPixelRatio(ratio) {
     renderer.setPixelRatio(ratio);
@@ -184,17 +184,17 @@ export function createRender(THREE, canvas, opts = {}) {
       frameCount++;
     }
     lastSample = now;
-    if (sampleSeconds < 1) return;
+    if (sampleSeconds < 4) return;
     fps = frameCount / sampleSeconds;
     const elapsed = sampleSeconds;
     sampleSeconds = 0;
     frameCount = 0;
     if (!adaptive) { lowSeconds = 0; return; }
-    if (fps < 40) lowSeconds += elapsed;
+    if (fps < 30) lowSeconds += elapsed;
     else lowSeconds = 0;
-    if (lowSeconds < 3) return;
+    if (lowSeconds < 8 || adaptiveSteps >= 2) return;
     lowSeconds = 0;
-    const ratio = renderer.getPixelRatio();
+    adaptiveSteps++; const ratio = renderer.getPixelRatio();
     if (ratio > 0.75) {
       rebuildAtPixelRatio(Math.max(0.75, ratio - 0.2));
       notify('Разрешение адаптировано под FPS');
