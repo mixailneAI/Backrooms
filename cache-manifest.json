@@ -1,5 +1,5 @@
 {
-  "version": "2ecab08259",
+  "version": "ed7a899618",
   "files": [
     "./",
     "./index.html",
@@ -22,6 +22,7 @@
     "./engine/physics.js",
     "./engine/render.js",
     "./engine/save.js",
+    "./world/chunkgen.js",
     "./world/manual.js",
     "./world/textures.js",
     "./ui/game.css",
