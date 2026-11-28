@@ -27,7 +27,7 @@ export function createGame(ctx) {
   let stamina = 100;
   const inventory = createInventory(save);
   let localArrows = save && Number.isFinite(Number(save.arrows)) ? Math.max(0, Math.floor(Number(save.arrows))) : 5;
-  const arrowMeshes = [];
+  const ARROWS_ENABLED = false; const arrowMeshes = [];
   let previewArrow = null;
   let arrowTexture = null;
   let arrowGesture = false;
@@ -159,7 +159,7 @@ export function createGame(ctx) {
     arrowTexture = null;
     arrowGesture = false;
   }
-  function updateArrowDrawing() {
+  function updateArrowDrawing() { if (!ARROWS_ENABLED) return;
     const held = !!input.isArrowDrawing;
     if (held && !arrowGesture) {
       arrowGesture = true;

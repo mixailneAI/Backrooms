@@ -396,3 +396,4 @@ body.ui-open #backpack-panel { display: none !important; }
   .hotbar-slot, .backpack-slot { animation: none !important; }
 }
 #hud { display: none !important; }
+#draw-arrow-btn, #arrow-counter { display: none !important; }
