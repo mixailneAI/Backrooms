@@ -274,7 +274,10 @@ export function createGame(ctx) {
     else stamina += 12 * dt;
     stamina = Math.max(0, Math.min(100, stamina));
     if (stamina <= 0 && (input.sprint || sprintHeld)) setSprint(false);
-    let drain = (config && config.sanityDrain) || 0;
+    const depth = config && config.chunked ? Math.floor(Math.hypot(camera.pos().x, camera.pos().z) / 16) : 0;
+     if (depth && hud && hud.setLevel) hud.setLevel('Бездна · глубина ' + depth);
+     let drain = (config && config.sanityDrain) || 0;
+     if (config && config.chunked) drain *= 1 + depth * 0.06;
     if (stamina < 25) drain *= 1.8;
     sanity -= drain * 0.12 * dt;
     sanity = Math.max(0, Math.min(100, sanity));
@@ -290,7 +293,7 @@ export function createGame(ctx) {
       if (n) prompt = n.label || n.type;
     }
     hud && hud.setPrompt(prompt);
-    manualWorld?.update?.(time); if (chunkWorld) { const cp = camera.pos(); chunkWorld.pos.x = cp.x; chunkWorld.pos.z = cp.z; chunkWorld.stream(); }
+    manualWorld?.update?.(time); if (chunkWorld) { const cp = camera.pos(); chunkWorld.pos.x = cp.x; chunkWorld.pos.z = cp.z; chunkWorld.stream(); interact.setItems(chunkWorld.interactables || []); }
     const actions = input.consumeActions();
     for (const a of actions) {
       if (a === 'interact') {
@@ -347,7 +350,7 @@ export function createGame(ctx) {
       }
       item.taken = true;
       hideItem(item);
-      if (type === 'spraycan') addArrows(add * 10);
+      if (chunkWorld && chunkWorld.taken) chunkWorld.taken.add(item.id); if (type === 'spraycan') addArrows(add * 10);
       events.emit('item-taken', { item, type, add, slotIndex, arrows: getArrowCount(), inventory: state().inventory });
       return;
     }

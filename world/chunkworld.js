@@ -1,5 +1,6 @@
-import { chunkLayout, CHUNK, idx } from './chunkgen.js';
+import { chunkLayout, CHUNK, GATES, idx } from './chunkgen.js';
 import { makeTexturedClone, makeDetailMaps } from './textures.js';
+import { prng } from '../core/prng.js';
 const keyOf = (cx, cz) => cx + '|' + cz;
 export class ChunkWorld {
   constructor(THREE, cfg = {}, scene) {
@@ -11,6 +12,8 @@ export class ChunkWorld {
     this.height = this.biome.height || 3;
     this.chunks = new Map();
     this.matCache = new Map();
+    this.taken = new Set();
+    this.interactables = [];
     this.pos = { x: 4.5, z: 4.5 };
     this.yaw = 0;
     this.center = { cx: 0, cz: 0 };
@@ -32,6 +35,29 @@ export class ChunkWorld {
     this.matCache.set(k, m);
     return m;
   }
+  pickupMesh(kind) {
+    const T = this.THREE;
+    const g = new T.Group();
+    if (kind === 'water') {
+      const glass = new T.MeshStandardMaterial({ color: '#bfefff', transparent: true, opacity: 0.55, roughness: 0.12, metalness: 0.02 });
+      const body = new T.Mesh(new T.CylinderGeometry(0.11, 0.13, 0.32, 16), glass);
+      const cap = new T.Mesh(new T.CylinderGeometry(0.055, 0.055, 0.06, 12), new T.MeshStandardMaterial({ color: '#477d4d', roughness: 0.6 }));
+      cap.position.y = 0.19;
+      g.add(body, cap);
+    } else if (kind === 'food') {
+      const meat = new T.Mesh(new T.CylinderGeometry(0.13, 0.15, 0.07, 16), new T.MeshStandardMaterial({ color: '#c98a3a', roughness: 0.75 }));
+      const bone = new T.Mesh(new T.CylinderGeometry(0.025, 0.03, 0.16, 8), new T.MeshStandardMaterial({ color: '#e8d9b8', roughness: 0.9 }));
+      bone.rotation.z = Math.PI / 2.6; bone.position.set(0.14, 0.02, 0);
+      g.add(meat, bone);
+    } else {
+      const body = new T.Mesh(new T.CylinderGeometry(0.085, 0.085, 0.3, 16), new T.MeshStandardMaterial({ color: '#e8d27a', roughness: 0.5, metalness: 0.2 }));
+      const cap = new T.Mesh(new T.CylinderGeometry(0.05, 0.06, 0.07, 12), new T.MeshStandardMaterial({ color: '#554321', roughness: 0.55 }));
+      cap.position.y = 0.185;
+      g.add(body, cap);
+    }
+    g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    return g;
+  }
   buildChunk(cx, cz) {
     const T = this.THREE, S = this.size;
     const layout = chunkLayout(this.seed, cx, cz);
@@ -52,8 +78,23 @@ export class ChunkWorld {
     const lamp = new T.Mesh(new T.PlaneGeometry(1.4, 0.7), new T.MeshBasicMaterial({ color: '#fff2b0' }));
     lamp.rotation.x = Math.PI / 2; lamp.position.set(4.5, this.height - 0.02, 4.5);
     g.add(lamp);
+    const r = prng('items|' + this.seed + '|' + cx + '|' + cz);
+    const kinds = ['water', 'food', 'spraycan'];
+    const items = [];
+    const n = r.int(3);
+    for (let i = 0; i < n; i++) {
+      const gx = GATES[r.int(2)], gz = GATES[r.int(2)];
+      const id = 'ab_' + cx + '_' + cz + '_' + i;
+      if (this.taken.has(id)) continue;
+      const kind = kinds[r.int(3)];
+      const mesh = this.pickupMesh(kind);
+      mesh.position.set(gx + 0.5, 0.2, gz + 0.5);
+      g.add(mesh);
+      items.push({ id, type: 'item', x: cx * S + gx + 0.5, z: cz * S + gz + 0.5, data: { kind, water: 1, count: 1 }, mesh, taken: false });
+    }
     this.root.add(g);
-    this.chunks.set(keyOf(cx, cz), { cx, cz, group: g, layout });
+    this.chunks.set(keyOf(cx, cz), { cx, cz, group: g, layout, items });
+    this.interactables = [...this.chunks.values()].flatMap(c => c.items);
   }
   stream(force = false) {
     const S = this.size;
@@ -62,8 +103,14 @@ export class ChunkWorld {
     this.center = { cx, cz };
     const need = new Set();
     for (let dx = -this.view; dx <= this.view; dx++) for (let dz = -this.view; dz <= this.view; dz++) need.add(keyOf(cx + dx, cz + dz));
-    for (const [k, c] of [...this.chunks]) if (!need.has(k)) { this.root.remove(c.group); c.group.traverse(o => { o.geometry?.dispose?.(); }); this.chunks.delete(k); }
+    for (const [k, c] of [...this.chunks]) if (!need.has(k)) {
+      this.root.remove(c.group);
+      c.group.traverse(o => { o.geometry?.dispose?.(); });
+      for (const it of c.items) it.mesh.traverse(m => { if (m.isMesh) m.material?.dispose?.(); });
+      this.chunks.delete(k);
+    }
     for (const k of need) if (!this.chunks.has(k)) { const [a, b] = k.split('|').map(Number); this.buildChunk(a, b); }
+    this.interactables = [...this.chunks.values()].flatMap(c => c.items);
   }
   cellAt(x, z) {
     const S = this.size;
@@ -90,8 +137,13 @@ export class ChunkWorld {
     this.stream();
   }
   dispose() {
-    for (const [, c] of this.chunks) { this.root.remove(c.group); c.group.traverse(o => { o.geometry?.dispose?.(); }); }
+    for (const [, c] of this.chunks) {
+      this.root.remove(c.group);
+      c.group.traverse(o => { o.geometry?.dispose?.(); });
+      for (const it of c.items) it.mesh.traverse(m => { if (m.isMesh) m.material?.dispose?.(); });
+    }
     this.chunks.clear();
+    this.interactables = [];
     for (const m of this.matCache.values()) m.dispose();
     this.matCache.clear();
     this.scene.remove(this.root);
