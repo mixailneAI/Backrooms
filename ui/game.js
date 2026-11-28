@@ -385,6 +385,7 @@ async function main() {
     game.events.on('inventory-full', () => showToast('Инвентарь заполнен', 'danger'));
     game.events.on('note-taken', ({ lore }) => { audio.note(); hud.setStats(game.state()); showToast('Записка найдена', 'paper'); openNote(lore); });
     game.events.on('food-used', () => { audio.eat(); hud.setStats(game.state()); showToast('Выносливость: +35', 'pickup'); });
+     game.events.on('camera-used', ({ dir }) => { audio.click(); showToast('Камера: ближайшая цель — ' + dir, 'system'); });
     game.events.on('arrow-placed', () => audio.arrow());
     game.events.on('arrow-empty', () => showToast('Нет стрелок. Найди баллончик', 'danger'));
     game.events.on('door-open', () => { audio.door(); showToast('Дверь открыта', 'door'); });

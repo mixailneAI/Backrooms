@@ -5,7 +5,8 @@ const ITEM_ICONS = {
   note: 'g-note',
   food: 'g-food',
   spraycan: 'g-spray',
-  backpack: 'g-backpack'
+  backpack: 'g-backpack',
+  camera: 'g-camera'
 };
 
 const ITEM_NAMES = {
@@ -13,7 +14,8 @@ const ITEM_NAMES = {
   note: 'Записка',
   food: 'Курица',
   spraycan: 'Баллончик',
-  backpack: 'Рюкзак'
+  backpack: 'Рюкзак',
+  camera: 'Камера'
 };
 
 export function createHud(doc, opts = {}) {

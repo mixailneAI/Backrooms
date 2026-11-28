@@ -1,4 +1,5 @@
 export function build(w, seed, pal) {
+   const sign = (o) => { if (typeof w.sign === 'function') w.sign(o); };
   const p = pal || {};
   const wallPal = p.wall || {};
   const floorPal = p.floor || {};
@@ -15,7 +16,10 @@ export function build(w, seed, pal) {
   w.box({ x: 6, z: 4, w: 8, d: 0.5, palette: wallPal });
   w.box({ x: 0, z: -8, w: 0.5, d: 8, palette: wallPal });
   w.box({ x: 0, z: 8, w: 0.5, d: 8, palette: wallPal });
-  w.spawn({ x: -9, z: -9 });
+  sign({ x: 9, z: 8.55, y: 2.35, rot: Math.PI, text: 'ВЫХОД', color: '#7fff9f', w: 1.3, h: 0.55 });
+   sign({ x: -5, z: 2.55, y: 1.9, rot: 0, text: '→', color: '#ffcf4a' });
+   sign({ x: 0.55, z: 2, y: 1.9, rot: Math.PI / 2, text: '→', color: '#ffcf4a' });
+   w.spawn({ x: -9, z: -9 });
   w.exit({ id: 'exit0', x: 9, z: 9, data: { kind: 'frame' } });
   w.item({ id: 'water0', x: -5, z: 0, color: '#bfefff', data: { kind: 'bottle', water: 1 } });
   w.note({ id: 'note0', x: -5, z: 3, color: '#fff2b0', data: { kind: 'paper', loreIndex: 0 } });

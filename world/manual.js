@@ -240,7 +240,20 @@ export function createManualWorld(THREE, scene, opts = {}) {
     return mesh;
   }
 
-  function addLampGlow(o, w, d, color) {
+  const signMaps = new Map();
+ function signTexture(THREE, color, text) {
+   const k = color + '|' + text;
+   if (signMaps.has(k)) return signMaps.get(k);
+   const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+   const x = c.getContext('2d');
+   x.fillStyle = 'rgba(10,8,3,0.88)'; x.fillRect(0, 0, 256, 128);
+   x.strokeStyle = color; x.lineWidth = 6; x.strokeRect(6, 6, 244, 116);
+   x.fillStyle = color; x.font = 'bold 64px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+   x.fillText(text, 128, 68);
+   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+   signMaps.set(k, t); return t;
+ }
+ function addLampGlow(o, w, d, color) {
     const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2.4, roughness: 0.32, metalness: 0, side: THREE.DoubleSide });
     const panel = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat);
     panel.rotation.x = -Math.PI / 2;
@@ -302,7 +315,8 @@ export function createManualWorld(THREE, scene, opts = {}) {
       group.add(m);
       return m;
     },
-    spawn(o = {}) { spawns.push({ x: o.x || 0, z: o.z || 0 }); return spawns[spawns.length - 1]; },
+    sign(o = {}) { const m = new THREE.Mesh(new THREE.PlaneGeometry(o.w ?? 1.0, o.h ?? 0.5), new THREE.MeshBasicMaterial({ map: signTexture(THREE, o.color || '#ffcf4a', o.text || '→'), transparent: true, depthWrite: false })); m.position.set(o.x || 0, o.y ?? 1.9, o.z || 0); m.rotation.y = o.rot ?? 0; group.add(m); return m; },
+     spawn(o = {}) { spawns.push({ x: o.x || 0, z: o.z || 0 }); return spawns[spawns.length - 1]; },
     exit(o = {}) { return marker(o, 'exit', o.color || '#7fff9f'); },
     item(o = {}) { return marker(o, 'item', o.color || '#bfefff'); },
     note(o = {}) { return marker(o, 'note', o.color || '#fff2b0'); },

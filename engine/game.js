@@ -193,7 +193,8 @@ export function createGame(ctx) {
   }
   function useActiveItem() {
     const active = inventory.getActive();
-    if (!active || active.type !== 'food' || stamina >= 100) return false;
+    if (active && active.type === 'camera') { const p = camera.pos(); const n = interact.nearest(p.x, p.z); let dir = 'цель рядом'; if (n) { const dx = n.x - p.x, dz = n.z - p.z; dir = Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? 'восток' : 'запад') : (dz > 0 ? 'юг' : 'север'); } events.emit('camera-used', { dir }); return true; }
+     if (!active || active.type !== 'food' || stamina >= 100) return false;
     const consumed = inventory.consume(inventory.getActiveIndex(), 1);
     if (!consumed) return false;
     stamina = Math.min(100, stamina + 35);
@@ -343,7 +344,8 @@ export function createGame(ctx) {
       const kind = item.data && item.data.kind || 'bottle';
       const type = kind === 'bottle' ? 'water' : kind;
       const add = type === 'water' ? Math.max(1, Math.floor(Number(item.data && item.data.water) || 1)) : Math.max(1, Math.floor(Number(item.data && item.data.count) || 1));
-      const slotIndex = inventory.add({ id: item.id, type, count: add, data: item.data });
+      if (type === 'spraycan') { item.taken = true; hideItem(item); if (chunkWorld && chunkWorld.taken) chunkWorld.taken.add(item.id); addArrows(add * 10); events.emit('item-taken', { item, type, add, slotIndex: -1, arrows: getArrowCount(), inventory: state().inventory }); return; }
+       const slotIndex = inventory.add({ id: item.id, type, count: add, data: item.data });
       if (slotIndex < 0) {
         events.emit('inventory-full', { item });
         return;

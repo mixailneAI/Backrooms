@@ -1,7 +1,7 @@
 const SLOT_COUNT = 12;
 const HOTBAR_COUNT = 3;
 const STACKABLE = new Set(['water', 'food', 'spraycan']);
-const VALID_TYPES = new Set(['water', 'note', 'food', 'spraycan', 'backpack']);
+const VALID_TYPES = new Set(['water', 'note', 'food', 'spraycan', 'backpack', 'camera']);
 
 function copyItem(item) {
   if (!item || typeof item !== 'object') return null;

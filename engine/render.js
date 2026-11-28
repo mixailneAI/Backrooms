@@ -64,7 +64,7 @@ void main(){
   c += vec3(0.006, 0.014, 0.004) * shadowMask;
   c *= 1.0 - uVignette * smoothstep(0.38, 0.96, distance(vUv, vec2(0.5)));
   float grain = fract(sin(dot(vUv * (uTime + 1.0), vec2(12.9898, 78.233))) * 43758.5453);
-  c += (grain - 0.5) * 0.02;
+  c += (grain - 0.5) * 0.006;
   c = clamp(c, 0.0, 1.0);
   gl_FragColor = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
 }`;

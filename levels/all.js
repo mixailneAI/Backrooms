@@ -9,8 +9,8 @@ export const abyss = {
   biome: {
     name: 'abyss', height: 3, wallDensity: 0.24,
     palette: { wall: '#b8a24a', floor: '#6f6030', ceiling: '#a89877' },
-    fog: { color: '#1c1608', near: 8, far: 40 },
-    hemi: 0.8, ambientLight: 0.26, ambient: 'deep',
+    fog: { color: '#241c0c', near: 12, far: 60 },
+    hemi: 1.15, ambientLight: 0.42, ambient: 'deep',
     entityType: 'none', entitySpeed: 0, openSky: false, water: false
   }
 };
